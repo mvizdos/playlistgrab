@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PlaylistGrab.com – Copy Any YouTube Playlist, Instantly</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Paste and export every video link from a public YouTube playlist. No distractions. Just instant, perfect results.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --primary: #2467fa;
+  --primary-dark: #193e89;
+  --success: #36ca89;
+  --danger: #e54e5e;
+  --background: #f6f8fd;
+  --panel: #fff;
+  --dark-bg: #1d232f;
+  --dark-panel: #202737;
+  --border: #b6cdf2;
+  --radius: 18px;
+  --shadow: 0 4px 24px 0 rgba(60,60,140,0.13);
+  --venmo: #3d95ce;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    animation: fadeSlideIn .62s cubic-bezier(.33,1.02,.62,.99) 1;
+  }
+  @keyframes fadeSlideIn {
+    from { opacity:0; transform: translateY(20px);}
+    to { opacity:1; transform:translateY(0);}
+  }
+  .toast-anim {
+    animation: toastUp .5s cubic-bezier(.41,1.07,.55,1.05);
+  }
+  @keyframes toastUp {
+    0% { opacity:0; transform:translateY(40px);}
+    90% { opacity:1;}
+    100% { opacity:1; transform:translateY(0);}
+  }
+}
+body, html {
+  background: var(--background); min-height:100vh; margin:0; color: #232a3a;
+  font-family: 'Inter',Avenir,Segoe UI,Arial,sans-serif; font-size: 17px; line-height: 1.58;
+}
+body.dark {background:var(--dark-bg);color:#e8eefa;}
+header {
+  text-align:center;margin:0 0 28px 0;padding:32px 0 8px 0;
+}
+h1{font-size:2.05em;letter-spacing:-2px;font-weight:900;margin:.1em 0 0.34em 0;color:var(--primary);}
+.tagline{font-size:1.2em;font-weight:800;letter-spacing:-.25px;margin-bottom:3px; color:var(--primary-dark);}
+.howto{font-size:1.09em;font-weight:600;margin-bottom:1px;color:#4e6ddb;}
+main{max-width:480px;width:97vw;margin:0 auto;}
+.panel{
+  background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:30px 21px 19px 21px;margin-bottom:32px;border:1.5px solid var(--border);}
+body.dark .panel{background:var(--dark-panel);border:1.5px solid #5970b4;}
+label{font-weight:700;letter-spacing:-0.5px;}
+.input-center-wrap{display:flex;justify-content:center;align-items:center;width:100%;}
+input[type="text"]{
+  font-size:1.15em;padding:13px;margin-bottom:13px;border-radius:10px;
+  border:1.5px solid #b6cdf2;background:#f3f6ff;text-align:center;min-width:260px;max-width:480px;width:100%;box-sizing:border-box;
+  margin-left:auto;margin-right:auto;display:block;
+}
+body.dark input[type="text"]{background:#232741;color:#eaf1fc;border:1.5px solid #355096;}
+input[type="text"]:focus{border-color:var(--primary);}
+#extract-btn, .export-btn, .danger-btn {
+  background:var(--primary);color:#fff;font-weight:700;padding:13px 40px;
+  font-size:1.12em;border:none;border-radius:900px;cursor:pointer;
+  transition:background .13s,box-shadow .17s,transform 0.10s;outline:none;margin:0 auto 15px auto;text-align:center;box-shadow:0 1px 6px 0 rgba(90,113,200,0.07);
+  display:block
+}
+#extract-btn:not(:disabled):hover, #extract-btn:not(:disabled):focus-visible {
+  box-shadow:0 3px 16px 0 rgba(70,130,220,0.14);
+  animation: pulseBtn 0.53s cubic-bezier(.34,1.21,.6,1.02) 1 alternate;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes pulseBtn{0%{transform:scale(1);}70%{transform:scale(1.08);}100%{transform:scale(1);}}
+}
+#extract-btn:disabled{background:#bfcedc;color:#e9f3fb;cursor:not-allowed;}
+.export-btn,.danger-btn{display:inline-block;margin:0 8px 0 8px;}
+.export-btn:active, #extract-btn:active, .danger-btn:active{transform:scale(.96);}
+.danger-btn{background:var(--danger)!important;}
+.center-bar{display:flex;justify-content:center;align-items:center;gap:16px;}
+#reset-btn{display:block;margin:26px auto 4px auto;}
+.results-wrap{margin:36px 0 0 0;}
+.output-title{font-size:1.16em;font-weight:800;margin-bottom:10px;letter-spacing:-.07px;text-align:center;}
+.outputbox{box-shadow:0 2px 12px 0 rgba(30,40,90,0.11);border-radius:12px;border:1.8px solid #2467fa;background:#fafdff;margin-bottom:18px;}
+body.dark .outputbox{border:1.9px solid #34e6d1;background:#161c2a;}
+#output{width:100%;min-height:84px;border:none;background:none;padding:13px 7px;font-size:1.05em;color:#183042;outline:none;resize:vertical;}
+body.dark #output{color:#eaeffa;}
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--success);border-radius:13px;padding:13px 26px;font-size:1.04em;color:#fff;font-weight:500;box-shadow:0 2px 15px 0 rgba(30,160,80,0.13);opacity:0;z-index:2000;pointer-events:none;transition:opacity .24s;}
+#toast.active{opacity:1;}
+#error-message{color:#c11024;font-weight:700;padding:8px 13px 9px 13px;border-radius:8px;font-size:1.02em;margin-top:17px;background:#fff5f5;text-align:center;}
+#how-link{text-align:center;display:block;font-weight:800;font-size:1.09em;margin:33px auto 9px auto;letter-spacing:.08em;color:#2253a8;}
+#how-link:focus{outline:2.5px solid #34e6d1;}
+footer{margin-top:45px;font-size:1em;text-align:center;color:#8ad;}
+.footer-row{display:flex;align-items:center;justify-content:center;gap:23px;margin-bottom:7px;}
+.footer-icon{display:flex;align-items:center;justify-content:center;background:#fff;border-radius:50%;width:38px;height:38px;transition:background .17s;}
+.footer-icon img{height:21px;width:21px;}
+.footer-icon:hover, .footer-icon:focus{background:#d7f6fb;}
+body.dark .footer-icon{background:#1d283c;}
+body.dark .footer-icon:hover, body.dark .footer-icon:focus{background:#243f49;}
+.copyright{color:#98a7c4;}
+.donate-wrap{text-align:center;}
+.venmo-btn {
+  background:var(--venmo);color:#fff;border:none;border-radius:19px;padding:.88em 2.55em;font-size:1.10em;font-weight:700;cursor:pointer;text-decoration:none;
+  margin:15px auto 10px auto;display:inline-flex;align-items:center;gap:10px;transition:background .2s;
+}
+.venmo-btn .venmo-icon-bg {background: #fff; border-radius: 50%; display:inline-flex;align-items:center;justify-content:center;padding:4px;width:2.1em;height:2.1em;}
+.venmo-btn img{display:inline-block;height:1.38em;width:1.38em;vertical-align:middle;}
+.venmo-btn:hover,.venmo-btn:focus{background:#276eaa;outline:2.5px solid #31c6dc;}
+.venmo-note{display:block;margin-top:8px;color:#245b94;font-size:1.04em;}
+body.dark .venmo-note{color:#77e4d3;}
+@media (max-width:650px){
+  .panel, .outputbox{padding:11px 1vw;}
+  main{max-width:100vw;}
+  h1{font-size:1.28em;}
+  .tagline{font-size:1.02em;}
+  .howto{font-size:.98em;}
+  .center-bar{flex-direction:column;gap:10px;}
+}
+#how-modal {background:rgba(34,44,80,0.24);position:fixed;z-index:10001;top:0;left:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;}
+#how-modal.active {display:flex;}
+#how-modal .help-modal-content { background:#fff; color:#223; border-radius:13px; padding:28px 22px; min-width:260px; max-width:355px; border:2.5px solid #2253a8; box-shadow:0 7px 35px 0 rgba(30,30,87,0.13);position:relative;text-align:left;}
+body.dark #how-modal .help-modal-content {background:#1b2433;color:#e8eef5;border-color:#34e6d1;}
+#how-modal .onboard-close {position:absolute; right:13px; top:13px; background:none;border:none;font-size:1.18em;color:#496;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;}
+#how-modal .onboard-close:focus{outline:2px solid #28af80;}
+.help-modal-content ul{margin-top:0; padding-left:21px; font-size:1.09em;}
+.help-modal-content ul li{margin-bottom:10px;}
+  </style>
+</head>
+<body>
+  <button id="darkmode-toggle" aria-label="Toggle dark mode" title="Toggle Dark Mode" style="position:fixed;right:21px;top:13px;font-size:2em;border:none;background:none;z-index:1001;cursor:pointer;">🌚</button>
+  <header>
+    <h1>PlaylistGrab.com</h1>
+    <div class="tagline">Extract all your YouTube playlist links, instantly.</div>
+    <div class="howto">Paste a playlist link below, click Extract, then copy or download your raw video URLs. As simple as it gets.</div>
+  </header>
+  <main>
+    <form class="panel" id="extractor-form" autocomplete="off">
+      <label for="playlist">Playlist link</label>
+      <div class="input-center-wrap">
+        <input id="playlist" type="text" autocomplete="off"
+          placeholder="https://www.youtube.com/playlist?list=..."
+          aria-required="true" aria-label="YouTube playlist URL" autofocus>
+      </div>
+      <button id="extract-btn" type="button" disabled style="margin:0 auto;display:block;">Extract Links</button>
+      <div id="error-message" style="display:none;" aria-live="polite"></div>
+      <div id="spinner" class="spinner" aria-label="Loading" role="status" aria-live="polite"></div>
+      <section class="results-wrap" id="output-section" style="display:none;">
+        <div class="output-title">Your Playlist Video Links</div>
+        <div class="outputbox fade-in" id="outbox-anim">
+          <textarea id="output" readonly spellcheck="false" aria-label="List of playlist video links" tabindex="0"></textarea>
+        </div>
+        <div class="center-bar">
+          <button id="copy-btn" class="export-btn" type="button" tabindex="0">Copy</button>
+          <button id="txt-btn" class="export-btn" type="button" tabindex="0">TXT</button>
+          <button id="csv-btn" class="export-btn" type="button" tabindex="0">CSV</button>
+        </div>
+        <button id="reset-btn" class="export-btn danger-btn" type="button" title="Clear everything and start over" tabindex="0" style="margin-top:18px;margin-bottom:4px;">Start Over</button>
+        <div class="donate-wrap" aria-label="Tip & Support">
+          <span class="venmo-note">Like PlaylistGrab? Tip on Venmo:</span>
+          <a href="https://venmo.com/mvizdos" target="_blank" rel="noopener" class="venmo-btn" aria-label="Donate on Venmo">
+            <span class="venmo-icon-bg"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/venmo.svg" alt="Venmo" aria-hidden="true"></span>
+            @mvizdos
+          </a>
+        </div>
+      </section>
+      <a href="#" id="how-link" tabindex="0" role="button" aria-haspopup="dialog" aria-controls="how-modal" aria-expanded="false">How This Works</a>
+      <div id="how-modal" tabindex="-1" aria-modal="true" aria-labelledby="how-modal-title" role="dialog">
+        <div class="help-modal-content" role="document">
+          <button id="how-modal-close" aria-label="Close help modal" class="onboard-close">&#10005;</button>
+          <h2 id="how-modal-title" style="font-size:1.13em;">How PlaylistGrab Works</h2>
+          <ul>
+            <li>Paste a <b>public</b> playlist URL.</li>
+            <li>Press <b>Extract Links</b>—you get clean, direct URLs in a standard format.</li>
+            <li>Copy, TXT, CSV: instantly download or share links (CSV = comma separated).</li>
+            <li>Press <b>Escape</b> or X to close this guide.</li>
+          </ul>
+        </div>
+      </div>
+    </form>
+  </main>
+  <div id="toast" aria-live="polite" role="status"></div>
+  <footer>
+    <div class="footer-row">
+      <a class="footer-icon" href="https://youtube.mvizdos.com?utm_source=playlistgrab.com" target="_blank" aria-label="YouTube"><img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png" alt="YouTube"></a>
+      <a class="footer-icon" href="https://linkedin.mvizdos.com?utm_source=playlistgrab.com" target="_blank" aria-label="LinkedIn"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/linkedin.svg" alt="LinkedIn"></a>
+      <a class="footer-icon" href="https://bsky.mvizdos.com?utm_source=playlistgrab.com" target="_blank" aria-label="Bluesky"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/bluesky.svg" alt="Bluesky"></a>
+      <a class="footer-icon" href="https://github.com/mvizdos?utm_source=playlistgrab.com" target="_blank" aria-label="GitHub"><img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub"></a>
+      <a class="footer-icon" href="mailto:support@playlistgrab.com" aria-label="Email"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/maildotru.svg" alt="Email"></a>
+    </div>
+    <div class="copyright">&copy; <span id="year"></span> PlaylistGrab.com</div>
+  </footer>
+<script>
+'use strict';
+document.getElementById('year').textContent = new Date().getFullYear();
+function setDarkMode(on) {
+  document.body.classList.toggle('dark', !!on);
+  localStorage.setItem('dark', !!on ? '1' : '0');
+  document.getElementById('darkmode-toggle').textContent = !!on ? '🌞' : "🌚";
+}
+(function(){
+  let key = localStorage.getItem('dark');
+  if (key === "1" || (key == null && window.matchMedia('(prefers-color-scheme: dark)').matches)) setDarkMode(true);
+  document.getElementById('darkmode-toggle').onclick = () => setDarkMode(!document.body.classList.contains('dark'));
+})();
+function showToast(msg) {
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('active','toast-anim');
+  setTimeout(()=>{t.classList.remove('active','toast-anim');},1500);
+}
+function isValidYoutubePlaylist(url) {
+  // Accepts URLs like https://www.youtube.com/playlist?list=... or https://youtube.com/playlist?list=...
+  // or https://www.youtube.com/watch?v=XXXXX&list=XXXXX
+  // Blocks all other forms, including video/channel/user URLs.
+  const full = url.trim();
+  const playlistOnly = /^https:\/\/(www\.)?youtube\.com\/playlist\?list=([a-zA-Z0-9_-]{10,})$/;
+  const videoWithList = /^https:\/\/(www\.)?youtube\.com\/watch\?v=[a-zA-Z0-9_-]{11,}&list=([a-zA-Z0-9_-]{10,})$/;
+  return playlistOnly.test(full) || videoWithList.test(full);
+}
+function addUniversalButtonKeys(btn) {
+  btn.addEventListener('keydown', function(e){
+    if(e.key==="Enter"||e.key===" "){ e.preventDefault(); btn.click(); }
+  });
+}
+['extract-btn','copy-btn','txt-btn','csv-btn','reset-btn','how-link','how-modal-close'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)addUniversalButtonKeys(el);
+});
+const input = document.getElementById('playlist'),
+      extractBtn = document.getElementById('extract-btn'),
+      outputSection = document.getElementById('output-section'),
+      outputBox = document.getElementById('output'),
+      errorEl = document.getElementById('error-message'),
+      spinner = document.getElementById('spinner'),
+      copyBtn = document.getElementById('copy-btn'),
+      txtBtn = document.getElementById('txt-btn'),
+      csvBtn = document.getElementById('csv-btn'),
+      resetBtn = document.getElementById('reset-btn'),
+      outboxAnim = document.getElementById('outbox-anim');
+let lines = [], rows = [];
+function resetAll() {
+  input.value = '';
+  outputBox.value = '';
+  lines = [];
+  rows = [];
+  errorEl.style.display='none';
+  outputSection.style.display='none';
+  spinner.style.display='none';
+  extractBtn.disabled = true;
+  extractBtn.style.display = 'block';
+  input.removeAttribute('aria-disabled');
+  input.removeAttribute('aria-invalid');
+  input.focus();
+}
+input.addEventListener('input',function(){
+  extractBtn.disabled = !isValidYoutubePlaylist(this.value);
+  input.setAttribute('aria-invalid',extractBtn.disabled?"true":"false");
+  errorEl.style.display='none';
+});
+input.addEventListener('keydown',function(e){
+  if(e.key==="Enter" && !extractBtn.disabled){e.preventDefault();extractBtn.click();}
+});
+extractBtn.onclick = async function(){
+  if (!isValidYoutubePlaylist(input.value.trim())) {
+    errorEl.innerText = "Please enter a valid public YouTube playlist link (not a channel or video).";
+    errorEl.style.display = 'block';
+    input.focus();
+    return;
+  }
+  errorEl.style.display='none'; spinner.style.display='block'; outputSection.style.display='none';
+  try{
+    const playlistId = 'PLePF9OqSUSsI0rGE6zUAAiCY4XLNJ';
+    const url = input.value.trim();
+    lines = []; rows = [];
+    let html;
+    try {
+      html = await fetch("https://corsproxy.io/?"+encodeURIComponent(url)).then(r=>r.text());
+    } catch {
+      spinner.style.display='none';
+      errorEl.innerText = "Could not load playlist. Try again or check your link."; errorEl.style.display='block'; return;
+    }
+    // Robust canonical videoId extraction
+    let videoIds = new Set();
+    try {
+      const m = html.match(/var ytInitialData = (.*?);<\/script>/s);
+      if(m){
+        const data = JSON.parse(m[1]);
+        let videoListObjs = data.contents.twoColumnBrowseResultsRenderer.tabs.tabRenderer.content
+            .sectionListRenderer.contents.itemSectionRenderer.contents
+            .playlistVideoListRenderer.contents;
+        videoListObjs.forEach(item => {
+          let r = item.playlistVideoRenderer;
+          if (r && r.videoId && /^[a-zA-Z0-9_-]{11}$/.test(r.videoId)) {
+            videoIds.add(r.videoId);
+          }
+        });
+      }
+    } catch(e){}
+    // Fallback: regex any videoId in HTML (&v=XXXXXXXXXXX pattern):
+    for (const m of html.matchAll(/[?&]v=([a-zA-Z0-9_-]{11})/g)) {
+      videoIds.add(m[1]);
+    }
+    lines = Array.from(videoIds).map(
+      vid => `https://www.youtube.com/watch?v=${vid}&list=${playlistId}`
+    );
+    rows = lines.map(url => [url]);
+    spinner.style.display='none';
+    if(!lines.length){
+      errorEl.innerText="Nothing found! Use a public playlist."; errorEl.style.display='block'; return;
+    }
+    outputBox.value = lines.join('\n');
+    outputSection.style.display='block'; 
+    setTimeout(()=>{outboxAnim&&outboxAnim.classList.add('fade-in');outputBox.focus();},30);
+  }catch(e){
+    spinner.style.display='none';
+    errorEl.innerText = "Failed to fetch playlist. Please check the link or your connection.";
+    errorEl.style.display='block';
+  }
+};
+copyBtn.onclick = () => {navigator.clipboard.writeText(outputBox.value);showToast("Copied to clipboard!");};
+txtBtn.onclick = () => {
+  let b=new Blob([outputBox.value],{type:'text/plain'}),l=document.createElement('a');
+  l.href=URL.createObjectURL(b); l.download="playlistgrab-export.txt"; document.body.appendChild(l); l.click(); document.body.removeChild(l);
+  showToast("TXT saved!");
+};
+csvBtn.onclick = ()=>{
+  if(!rows.length) return;
+  let csv = rows.map(r=>r[0]).join(',');
+  let b=new Blob([csv], {type:'text/csv'}),l=document.createElement('a');
+  l.href=URL.createObjectURL(b); l.download="playlistgrab-export.csv"; document.body.appendChild(l); l.click(); document.body.removeChild(l);
+  showToast("CSV saved!");
+};
+resetBtn.onclick = ()=>{resetAll();};
+// Modal
+const howModal = document.getElementById('how-modal'),
+      howLink = document.getElementById('how-link'),
+      howClose = document.getElementById('how-modal-close');
+howLink.onclick = function(e){ e.preventDefault(); howModal.classList.add('active'); howModal.focus(); };
+howClose.onclick = function(){ howModal.classList.remove('active'); howLink.focus(); };
+howModal.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){ howModal.classList.remove('active'); howLink.focus(); }
+});
+howModal.addEventListener('mousedown', function(e){
+  if(e.target===howModal) { howModal.classList.remove('active'); howLink.focus(); }
+});
+</script>
+</body>
+</html>
