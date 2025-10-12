@@ -4,10 +4,24 @@
   <meta charset="UTF-8">
   <title>PlaylistGrab.com – Copy Any YouTube Playlist, Instantly</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="canonical" href="https://playlistgrab.com/">
   <meta name="description" content="Paste and export every video link from a public YouTube playlist. No distractions. Just instant, perfect results.">
+  <!-- Minimal critical CSS (only what's needed for first paint) -->
+  <style id="critical-css">
+    html,body{background:#f6f8fd;margin:0;color:#232a3a}
+    body{font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
+    header{padding:20px 12px 6px 12px;text-align:center}
+    h1{font-size:1.6rem;margin:.12rem 0;color:#2467fa}
+    main{max-width:480px;margin:0 auto;padding:0 12px}
+  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <!-- Preconnect common third-party domains used for icons and images -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://github.githubassets.com" crossorigin>
+  <link rel="preconnect" href="https://upload.wikimedia.org">
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" as="style" onload="this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"></noscript>
   <style>
 :root {
   --primary: #2467fa;
@@ -44,6 +58,23 @@ body, html {
   background: var(--background); min-height:100vh; margin:0; color: #232a3a;
   font-family: 'Inter',Avenir,Segoe UI,Arial,sans-serif; font-size: 17px; line-height: 1.58;
 }
+/* Make off-screen skip link visible when focused for accessibility */
+.skip-link:focus {
+  position: static !important; left: auto !important; top: auto !important; width: auto !important; height: auto !important;
+  padding: .5em .75em; background: #000; color: #fff; border-radius: 4px; z-index: 10000; text-decoration: none;
+}
+/* Visible focus for interactive elements (buttons, links, inputs) */
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 3px solid #34e6d1; outline-offset: 2px; border-radius: 6px;
+}
+/* Position dark mode toggle */
+#darkmode-toggle{position:fixed;right:21px;top:13px;font-size:2em;border:none;background:none;z-index:1001;cursor:pointer}
+/* Footer link color */
+footer a{color:#8ad}
+/* Hidden utility + reveal animation for nicer show/hide */
+.hidden{display:none!important;opacity:0;}
+.reveal{animation:fadeIn .34s cubic-bezier(.2,.9,.28,1) forwards; transform-origin:50% 50%;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px) scale(.985)}50%{transform:translateY(3px) scale(.992)}to{opacity:1;transform:translateY(0) scale(1)}}
 body.dark {background:var(--dark-bg);color:#e8eefa;}
 header {
   text-align:center;margin:0 0 28px 0;padding:32px 0 8px 0;
@@ -82,6 +113,12 @@ input[type="text"]:focus{border-color:var(--primary);}
 .export-btn,.danger-btn{display:inline-block;margin:0 8px 0 8px;}
 .export-btn:active, #extract-btn:active, .danger-btn:active{transform:scale(.96);}
 .danger-btn{background:var(--danger)!important;}
+
+/* Micro-interactions: subtle press and hover polish */
+#extract-btn, .export-btn, .danger-btn, .venmo-btn, .footer-icon { will-change: transform, box-shadow; transition: transform .12s cubic-bezier(.2,.9,.3,1), box-shadow .12s ease; }
+#extract-btn:hover, .export-btn:hover, .venmo-btn:hover, .footer-icon:hover { transform: translateY(-2px) scale(1.003); box-shadow: 0 6px 20px rgba(30,50,120,0.08); }
+#extract-btn:active, .export-btn:active, .venmo-btn:active, .footer-icon:active { transform: translateY(0) scale(.985); box-shadow: 0 3px 12px rgba(20,30,80,0.12); }
+#extract-btn[disabled], .export-btn[disabled] { transform: none; box-shadow: none; }
 .center-bar{display:flex;justify-content:center;align-items:center;gap:16px;}
 #reset-btn{display:block;margin:26px auto 4px auto;}
 .results-wrap{margin:36px 0 0 0;}
@@ -90,8 +127,16 @@ input[type="text"]:focus{border-color:var(--primary);}
 body.dark .outputbox{border:1.9px solid #34e6d1;background:#161c2a;}
 #output{width:100%;min-height:84px;border:none;background:none;padding:13px 7px;font-size:1.05em;color:#183042;outline:none;resize:vertical;}
 body.dark #output{color:#eaeffa;}
-#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--success);border-radius:13px;padding:13px 26px;font-size:1.04em;color:#fff;font-weight:500;box-shadow:0 2px 15px 0 rgba(30,160,80,0.13);opacity:0;z-index:2000;pointer-events:none;transition:opacity .24s;}
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(0);background:var(--success);border-radius:13px;padding:13px 26px;font-size:1.04em;color:#fff;font-weight:500;box-shadow:0 2px 15px 0 rgba(30,160,80,0.13);opacity:0;z-index:2000;pointer-events:none;}
 #toast.active{opacity:1;}
+.toast-anim{animation:toastIn .46s cubic-bezier(.2,.9,.28,1) forwards}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(18px) scale(.98)}50%{transform:translateX(-50%) translateY(6px) scale(.993)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+
+/* Toast close button */
+.toast-close{position:absolute;right:8px;top:6px;background:none;border:none;color:rgba(255,255,255,0.9);font-size:1rem;cursor:pointer;padding:6px;border-radius:6px;}
+.toast-close:focus{outline:2px solid rgba(255,255,255,0.75)}
+.toast-message{display:inline-block;padding-right:18px}
+.toast.persistent{pointer-events:auto}
 #error-message{color:#c11024;font-weight:700;padding:8px 13px 9px 13px;border-radius:8px;font-size:1.02em;margin-top:17px;background:#fff5f5;text-align:center;}
 #how-link{text-align:center;display:block;font-weight:800;font-size:1.09em;margin:33px auto 9px auto;letter-spacing:.08em;color:#2253a8;}
 #how-link:focus{outline:2.5px solid #34e6d1;}
@@ -129,93 +174,167 @@ body.dark #how-modal .help-modal-content {background:#1b2433;color:#e8eef5;borde
 #how-modal .onboard-close:focus{outline:2px solid #28af80;}
 .help-modal-content ul{margin-top:0; padding-left:21px; font-size:1.09em;}
 .help-modal-content ul li{margin-bottom:10px;}
+#how-modal-title{font-size:1.13em;margin-top:0}
+/* Screen-reader helper */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   </style>
 </head>
 <body>
-  <button id="darkmode-toggle" aria-label="Toggle dark mode" title="Toggle Dark Mode" style="position:fixed;right:21px;top:13px;font-size:2em;border:none;background:none;z-index:1001;cursor:pointer;">🌚</button>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <button id="darkmode-toggle" aria-label="Toggle dark mode" title="Toggle Dark Mode">🌚</button>
   <header>
     <h1>PlaylistGrab.com</h1>
     <div class="tagline">Extract all your YouTube playlist links, instantly.</div>
     <div class="howto">Paste a playlist link below, click Extract, then copy or download your raw video URLs. As simple as it gets.</div>
   </header>
-  <main>
+  <main id="content" role="main">
     <form class="panel" id="extractor-form" autocomplete="off">
       <label for="playlist">Playlist link</label>
       <div class="input-center-wrap">
         <input id="playlist" type="text" autocomplete="off"
           placeholder="https://www.youtube.com/playlist?list=..."
-          aria-required="true" aria-label="YouTube playlist URL" autofocus>
+          aria-required="true" aria-label="YouTube playlist URL" aria-describedby="error-message" autofocus>
       </div>
-      <button id="extract-btn" type="button" disabled style="margin:0 auto;display:block;">Extract Links</button>
-      <div id="error-message" style="display:none;" aria-live="polite"></div>
-      <div id="spinner" class="spinner" aria-label="Loading" role="status" aria-live="polite"></div>
-      <section class="results-wrap" id="output-section" style="display:none;">
+  <button id="extract-btn" type="button" disabled>Extract Links</button>
+  <div id="error-message" class="hidden" aria-live="polite"></div>
+  <div id="spinner" class="spinner hidden" aria-label="Loading" role="status" aria-live="polite"></div>
+  <section class="results-wrap hidden" id="output-section">
         <div class="output-title">Your Playlist Video Links</div>
         <div class="outputbox fade-in" id="outbox-anim">
           <textarea id="output" readonly spellcheck="false" aria-label="List of playlist video links" tabindex="0"></textarea>
         </div>
         <div class="center-bar">
-          <button id="copy-btn" class="export-btn" type="button" tabindex="0">Copy</button>
-          <button id="txt-btn" class="export-btn" type="button" tabindex="0">TXT</button>
-          <button id="csv-btn" class="export-btn" type="button" tabindex="0">CSV</button>
+          <button id="copy-btn" class="export-btn" type="button" tabindex="0" aria-label="Copy links to clipboard">Copy</button>
+          <button id="txt-btn" class="export-btn" type="button" tabindex="0" aria-label="Download links as TXT">TXT</button>
+          <button id="csv-btn" class="export-btn" type="button" tabindex="0" aria-label="Download links as CSV">CSV</button>
         </div>
-        <button id="reset-btn" class="export-btn danger-btn" type="button" title="Clear everything and start over" tabindex="0" style="margin-top:18px;margin-bottom:4px;">Start Over</button>
+  <button id="reset-btn" class="export-btn danger-btn" type="button" title="Clear everything and start over" tabindex="0">Start Over</button>
         <div class="donate-wrap" aria-label="Tip & Support">
           <span class="venmo-note">Like PlaylistGrab? Tip on Venmo:</span>
-          <a href="https://venmo.com/mvizdos" target="_blank" rel="noopener" class="venmo-btn" aria-label="Donate on Venmo">
-            <span class="venmo-icon-bg"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/venmo.svg" alt="Venmo" aria-hidden="true"></span>
-            @mvizdos
-          </a>
+          <a href="https://venmo.com/mvizdos" target="_blank" rel="noopener noreferrer" title="Open Venmo (new tab)" class="venmo-btn" aria-label="Donate on Venmo">
+            <span class="venmo-icon-bg"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/venmo.svg" alt="Venmo" aria-hidden="true" loading="lazy" decoding="async"></span>
+              @mvizdos
+            </a>
+          </div>
+        </section>
+        <a href="#" id="how-link" tabindex="0" role="button" aria-haspopup="dialog" aria-controls="how-modal" aria-expanded="false">How This Works</a>
+        <div id="how-modal" tabindex="-1" aria-modal="true" aria-labelledby="how-modal-title" role="dialog">
+          <div class="help-modal-content" role="document">
+            <button id="how-modal-close" aria-label="Close help modal" class="onboard-close">&#10005;</button>
+            <h2 id="how-modal-title">How PlaylistGrab Works</h2>
+            <ul>
+              <li>Paste a <b>public</b> playlist URL.</li>
+              <li>Press <b>Extract Links</b>—you get clean, direct URLs in a standard format.</li>
+              <li>Copy, TXT, CSV: instantly download or share links (CSV = comma separated).</li>
+              <li>Press <b>Escape</b> or X to close this guide.</li>
+            </ul>
+          </div>
         </div>
-      </section>
-      <a href="#" id="how-link" tabindex="0" role="button" aria-haspopup="dialog" aria-controls="how-modal" aria-expanded="false">How This Works</a>
-      <div id="how-modal" tabindex="-1" aria-modal="true" aria-labelledby="how-modal-title" role="dialog">
-        <div class="help-modal-content" role="document">
-          <button id="how-modal-close" aria-label="Close help modal" class="onboard-close">&#10005;</button>
-          <h2 id="how-modal-title" style="font-size:1.13em;">How PlaylistGrab Works</h2>
-          <ul>
-            <li><b>** NOTE ** <br>ALL DATA AND PROCESSING</b> stays on YOUR local machine. We DO NOT collect anything. </li>
-            <li>Paste a <b>public</b> playlist URL.</li>
-            <li>Press <b>Extract Links</b>—you get clean, direct URLs in a standard format.</li>
-            <li>Copy, TXT, CSV: instantly download or share links (CSV = comma separated).</li>
-            <li>Press <b>Escape</b> or X to close this guide.</li>
-          </ul>
-        </div>
-      </div>
-    </form>
+      </form>
   </main>
-  <div id="toast" aria-live="polite" role="status"></div>
+  <div id="toast" aria-live="polite" aria-atomic="true" role="status" tabindex="0">
+    <button id="toast-close" class="toast-close" aria-label="Dismiss notification">✕</button>
+    <span id="toast-message" class="toast-message"></span>
+  </div>
+  <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
   <footer>
     <div class="footer-row">
-      <a class="footer-icon" href="https://youtube.mvizdos.com?utm_source=playlistgrab.com" target="_blank" aria-label="YouTube"><img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png" alt="YouTube"></a>
-      <a class="footer-icon" href="https://linkedin.mvizdos.com?utm_source=playlistgrab.com" target="_blank" aria-label="LinkedIn"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/linkedin.svg" alt="LinkedIn"></a>
-      <a class="footer-icon" href="https://bsky.mvizdos.com?utm_source=playlistgrab.com" target="_blank" aria-label="Bluesky"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/bluesky.svg" alt="Bluesky"></a>
-      <a class="footer-icon" href="https://github.com/mvizdos?utm_source=playlistgrab.com" target="_blank" aria-label="GitHub"><img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub"></a>
-      <a class="footer-icon" href="mailto:support@playlistgrab.com" aria-label="Email"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/maildotru.svg" alt="Email"></a>
+  <a class="footer-icon" href="https://youtube.mvizdos.com?utm_source=playlistgrab.com" target="_blank" rel="noopener noreferrer" title="Open YouTube profile (new tab)" aria-label="YouTube"><img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png" alt="YouTube" loading="lazy" decoding="async"></a>
+  <a class="footer-icon" href="https://linkedin.mvizdos.com?utm_source=playlistgrab.com" target="_blank" rel="noopener noreferrer" title="Open LinkedIn profile (new tab)" aria-label="LinkedIn"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/linkedin.svg" alt="LinkedIn" loading="lazy" decoding="async"></a>
+  <a class="footer-icon" href="https://bsky.mvizdos.com?utm_source=playlistgrab.com" target="_blank" rel="noopener noreferrer" title="Open Bluesky profile (new tab)" aria-label="Bluesky"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/bluesky.svg" alt="Bluesky" loading="lazy" decoding="async"></a>
+  <a class="footer-icon" href="https://github.com/mvizdos?utm_source=playlistgrab.com" target="_blank" rel="noopener noreferrer" title="Open GitHub profile (new tab)" aria-label="GitHub"><img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" loading="lazy" decoding="async"></a>
+  <a class="footer-icon" href="mailto:support@playlistgrab.com" rel="noopener noreferrer" title="Send email to support@playlistgrab.com" aria-label="Email"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/maildotru.svg" alt="Email" loading="lazy" decoding="async"></a>
     </div>
-    <a href = "privacy.html" style="color:#8ad;" tabindex="0">Privacy Policy</a> · <a href = "tos.html" style="color:#8ad;" tabindex="0">Terms of Service</a>
-    <p></p>
+  <a href="privacy.html" tabindex="0">Privacy Policy</a> · <a href="tos.html" tabindex="0">Terms of Service</a>
     <div class="copyright">&copy; <span id="year"></span> PlaylistGrab.com</div>
   </footer>
 <script>
-'use strict';
-document.getElementById('year').textContent = new Date().getFullYear();
-function setDarkMode(on) {
-  document.body.classList.toggle('dark', !!on);
-  localStorage.setItem('dark', !!on ? '1' : '0');
-  document.getElementById('darkmode-toggle').textContent = !!on ? '🌞' : "🌚";
-}
-(function(){
-  let key = localStorage.getItem('dark');
-  if (key === "1" || (key == null && window.matchMedia('(prefers-color-scheme: dark)').matches)) setDarkMode(true);
-  document.getElementById('darkmode-toggle').onclick = () => setDarkMode(!document.body.classList.contains('dark'));
-})();
-function showToast(msg) {
-  var t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('active','toast-anim');
-  setTimeout(()=>{t.classList.remove('active','toast-anim');},1500);
-}
-function isValidYoutubePlaylist(url) {
+document.addEventListener('DOMContentLoaded', function(){
+  'use strict';
+  document.getElementById('year').textContent = new Date().getFullYear();
+  // Toast helpers
+  const toastEl = document.getElementById('toast');
+  const toastMsg = document.getElementById('toast-message');
+  const toastClose = document.getElementById('toast-close');
+
+  function closeToast() {
+    if (!toastEl) return;
+    toastEl.classList.remove('active','toast-anim','persistent','reveal');
+    toastEl.removeAttribute('role');
+    toastMsg.textContent = '';
+    // remove listeners
+    toastEl.removeEventListener('mouseenter', _clearTimer);
+    toastEl.removeEventListener('mouseleave', _startTimer);
+    toastEl.removeEventListener('focus', _clearTimer);
+    toastEl.removeEventListener('blur', _startTimer);
+    toastClose.removeEventListener('click', closeToast);
+    _clearTimer();
+  }
+  let _timer = null;
+  function _clearTimer(){ if(_timer){ clearTimeout(_timer); _timer = null; } }
+  function _startTimer(ms){ _clearTimer(); _timer = setTimeout(()=>{ closeToast(); }, ms || 1500); }
+
+  // Close button (guarded)
+  if (toastClose) toastClose.addEventListener('click', closeToast);
+
+  function showToast(msg, opts) {
+    opts = opts || {};
+    if (!toastEl) return;
+    toastMsg.textContent = msg;
+    // persistent: do not auto-hide
+    if (opts.persistent) {
+      toastEl.classList.add('persistent');
+      toastEl.setAttribute('role', opts.role || 'alert');
+    } else {
+      toastEl.classList.remove('persistent');
+      toastEl.setAttribute('role', opts.role || 'status');
+    }
+    toastEl.classList.add('active','toast-anim');
+
+    // pause/resume behavior only for non-persistent
+    _clearTimer();
+    toastEl.removeEventListener('mouseenter', _clearTimer);
+    toastEl.removeEventListener('mouseleave', _startTimer);
+    toastEl.removeEventListener('focus', _clearTimer);
+    toastEl.removeEventListener('blur', _startTimer);
+    if (!opts.persistent) {
+      toastEl.addEventListener('mouseenter', _clearTimer);
+      toastEl.addEventListener('mouseleave', _startTimer);
+      toastEl.addEventListener('focus', _clearTimer);
+      toastEl.addEventListener('blur', _startTimer);
+      _startTimer(opts.timeout || 1500);
+    }
+  }
+
+  // expose to global scope for existing calls
+  window.showToast = showToast;
+
+  function setDarkMode(on) {
+    document.body.classList.toggle('dark', !!on);
+    localStorage.setItem('dark', !!on ? '1' : '0');
+    document.getElementById('darkmode-toggle').textContent = !!on ? '🌞' : "🌚";
+  }
+  (function(){
+    let key = localStorage.getItem('dark');
+    if (key === "1" || (key == null && window.matchMedia('(prefers-color-scheme: dark)').matches)) setDarkMode(true);
+    document.getElementById('darkmode-toggle').onclick = () => setDarkMode(!document.body.classList.contains('dark'));
+  })();
+  function showToast(msg) {
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('active','toast-anim');
+    // pause/resume behavior
+    let timeout = 1500;
+    let to = null;
+    function clearTimer(){ if(to) { clearTimeout(to); to = null; } }
+    function startTimer(){ clearTimer(); to = setTimeout(()=>{ t.classList.remove('active','toast-anim'); removeListeners(); }, timeout); }
+    function removeListeners(){ t.removeEventListener('mouseenter',clearTimer); t.removeEventListener('mouseleave',startTimer); t.removeEventListener('focus',clearTimer); t.removeEventListener('blur',startTimer); }
+    t.addEventListener('mouseenter', clearTimer);
+    t.addEventListener('mouseleave', startTimer);
+    t.addEventListener('focus', clearTimer);
+    t.addEventListener('blur', startTimer);
+    startTimer();
+  }
+  function isValidYoutubePlaylist(url) {
   // Accepts URLs like https://www.youtube.com/playlist?list=... or https://youtube.com/playlist?list=...
   // or https://www.youtube.com/watch?v=XXXXX&list=XXXXX
   // Blocks all other forms, including video/channel/user URLs.
@@ -250,11 +369,15 @@ function resetAll() {
   outputBox.value = '';
   lines = [];
   rows = [];
-  errorEl.style.display='none';
-  outputSection.style.display='none';
-  spinner.style.display='none';
+  errorEl.classList.add('hidden');
+  outputSection.classList.add('hidden');
+  spinner.classList.add('hidden');
+  // remove any leftover reveal classes so animations retrigger cleanly
+  errorEl.classList.remove('reveal');
+  spinner.classList.remove('reveal');
+  outputSection.classList.remove('reveal');
   extractBtn.disabled = true;
-  extractBtn.style.display = 'block';
+  extractBtn.classList.remove('hidden');
   input.removeAttribute('aria-disabled');
   input.removeAttribute('aria-invalid');
   input.focus();
@@ -262,19 +385,26 @@ function resetAll() {
 input.addEventListener('input',function(){
   extractBtn.disabled = !isValidYoutubePlaylist(this.value);
   input.setAttribute('aria-invalid',extractBtn.disabled?"true":"false");
-  errorEl.style.display='none';
+  errorEl.classList.add('hidden');
+  errorEl.classList.remove('reveal');
 });
 input.addEventListener('keydown',function(e){
   if(e.key==="Enter" && !extractBtn.disabled){e.preventDefault();extractBtn.click();}
 });
 extractBtn.onclick = async function(){
   if (!isValidYoutubePlaylist(input.value.trim())) {
-    errorEl.innerText = "Please enter a valid public YouTube playlist link (not a channel or video).";
-    errorEl.style.display = 'block';
+  errorEl.innerText = "Please enter a valid public YouTube playlist link (not a channel or video).";
+  errorEl.classList.remove('hidden');
     input.focus();
     return;
   }
-  errorEl.style.display='none'; spinner.style.display='block'; outputSection.style.display='none';
+  errorEl.classList.add('hidden');
+  errorEl.classList.remove('reveal');
+  // show spinner with reveal animation
+  spinner.classList.remove('hidden');
+  spinner.classList.remove('reveal'); void spinner.offsetWidth; spinner.classList.add('reveal');
+  outputSection.classList.add('hidden');
+  outputSection.classList.remove('reveal');
   try{
     const playlistId = 'PLePF9OqSUSsI0rGE6zUAAiCY4XLNJ';
     const url = input.value.trim();
@@ -283,8 +413,10 @@ extractBtn.onclick = async function(){
     try {
       html = await fetch("https://corsproxy.io/?"+encodeURIComponent(url)).then(r=>r.text());
     } catch {
-      spinner.style.display='none';
-      errorEl.innerText = "Could not load playlist. Try again or check your link."; errorEl.style.display='block'; return;
+  spinner.classList.add('hidden');
+  spinner.classList.remove('reveal');
+  errorEl.innerText = "Could not load playlist. Try again or check your link.";
+  errorEl.classList.remove('hidden'); errorEl.classList.remove('reveal'); void errorEl.offsetWidth; errorEl.classList.add('reveal'); return;
     }
     // Robust canonical videoId extraction
     let videoIds = new Set();
@@ -311,17 +443,20 @@ extractBtn.onclick = async function(){
       vid => `https://www.youtube.com/watch?v=${vid}&list=${playlistId}`
     );
     rows = lines.map(url => [url]);
-    spinner.style.display='none';
+    spinner.classList.add('hidden');
+    spinner.classList.remove('reveal');
     if(!lines.length){
-      errorEl.innerText="Nothing found! Use a public playlist."; errorEl.style.display='block'; return;
+      errorEl.innerText="Nothing found! Use a public playlist."; errorEl.classList.remove('hidden'); errorEl.classList.remove('reveal'); void errorEl.offsetWidth; errorEl.classList.add('reveal'); return;
     }
     outputBox.value = lines.join('\n');
-    outputSection.style.display='block'; 
+    outputSection.classList.remove('hidden');
+    outputSection.classList.add('reveal');
     setTimeout(()=>{outboxAnim&&outboxAnim.classList.add('fade-in');outputBox.focus();},30);
   }catch(e){
-    spinner.style.display='none';
+    spinner.classList.add('hidden');
+    spinner.classList.remove('reveal');
     errorEl.innerText = "Failed to fetch playlist. Please check the link or your connection.";
-    errorEl.style.display='block';
+    errorEl.classList.remove('hidden'); errorEl.classList.remove('reveal'); void errorEl.offsetWidth; errorEl.classList.add('reveal');
   }
 };
 copyBtn.onclick = () => {navigator.clipboard.writeText(outputBox.value);showToast("Copied to clipboard!");};
@@ -338,17 +473,52 @@ csvBtn.onclick = ()=>{
   showToast("CSV saved!");
 };
 resetBtn.onclick = ()=>{resetAll();};
-// Modal
+// Modal with focus trap
 const howModal = document.getElementById('how-modal'),
       howLink = document.getElementById('how-link'),
       howClose = document.getElementById('how-modal-close');
-howLink.onclick = function(e){ e.preventDefault(); howModal.classList.add('active'); howModal.focus(); };
-howClose.onclick = function(){ howModal.classList.remove('active'); howLink.focus(); };
-howModal.addEventListener('keydown', function(e){
-  if(e.key==='Escape'){ howModal.classList.remove('active'); howLink.focus(); }
-});
-howModal.addEventListener('mousedown', function(e){
-  if(e.target===howModal) { howModal.classList.remove('active'); howLink.focus(); }
+let _previouslyFocused = null;
+
+function getFocusableElements(container) {
+  return Array.from(container.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'))
+    .filter(el => !el.hasAttribute('disabled') && el.offsetParent !== null);
+}
+
+function openModal() {
+  _previouslyFocused = document.activeElement;
+  howModal.classList.add('active');
+  const focusables = getFocusableElements(howModal);
+  if (focusables.length) focusables[0].focus(); else howModal.focus();
+  document.addEventListener('keydown', trapTabKey);
+  const ann = document.getElementById('announcer');
+  if (ann) ann.textContent = 'Help dialog opened. Press Escape to close.';
+}
+
+function closeModal() {
+  howModal.classList.remove('active');
+  document.removeEventListener('keydown', trapTabKey);
+  if (_previouslyFocused && typeof _previouslyFocused.focus === 'function') _previouslyFocused.focus();
+  const ann = document.getElementById('announcer');
+  if (ann) ann.textContent = 'Help dialog closed.';
+}
+
+function trapTabKey(e) {
+  if (e.key !== 'Tab') return;
+  const focusables = getFocusableElements(howModal);
+  if (!focusables.length) { e.preventDefault(); return; }
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (e.shiftKey) { // shift + tab
+    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+  } else { // tab
+    if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+}
+
+howLink.addEventListener('click', function(e){ e.preventDefault(); openModal(); });
+howClose.addEventListener('click', function(){ closeModal(); });
+howModal.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+howModal.addEventListener('mousedown', function(e){ if(e.target === howModal) closeModal(); });
 });
 </script>
 </body>
