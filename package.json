@@ -1,0 +1,11 @@
+{
+  "name": "playlistgrab",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint:html": "htmlhint '**/*.html' || true"
+  },
+  "devDependencies": {
+    "htmlhint": "^1.4.6"
+  }
+}
