@@ -452,6 +452,30 @@
       cursor: pointer;
       color: var(--text-muted);
     }
+
+    .input-with-clear {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .input-with-clear input {
+      flex: 1;
+    }
+
+    .clear-btn {
+      padding: 0.5rem 0.6rem;
+      border-radius: 8px;
+      min-width: 36px;
+    }
+
+    .status-msg {
+      font-size: 0.95rem;
+    }
+
+    #result-count {
+      font-size: 0.95rem;
+    }
   </style>
 </head>
 
@@ -473,9 +497,18 @@
       <form id="extractor-form" onsubmit="return false;">
         <div class="input-group">
           <label for="playlist-url">Playlist Link</label>
-          <input type="text" id="playlist-url" placeholder="https://www.youtube.com/playlist?list=..."
-            autocomplete="off" spellcheck="false">
+          <div class="input-with-clear">
+            <input type="text" id="playlist-url" placeholder="https://www.youtube.com/playlist?list=..."
+              autocomplete="off" spellcheck="false" aria-label="Playlist URL">
+            <button type="button" id="clear-input" class="btn btn-secondary clear-btn" aria-label="Clear input">✕
+            </button>
+          </div>
+          <small style="color:var(--text-muted); display:block; margin-top:0.5rem;">Paste a public YouTube playlist or
+            a watch URL that includes <code>?list=</code>.</small>
         </div>
+
+        <div id="status-msg" class="status-msg" aria-live="polite"
+          style="margin-top:0.75rem;color:var(--text-muted);"></div>
 
         <button type="button" id="extract-btn" class="btn btn-primary" disabled>
           Extract Links
@@ -486,6 +519,10 @@
       </form>
 
       <div id="results-area" class="results-area">
+        <div id="result-count"
+          style="text-align:center; color:var(--text-muted); margin-bottom:0.5rem; display:none;">
+          Found <span id="count-num">0</span> videos
+        </div>
         <div class="input-group">
           <label for="output">Your Links</label>
           <textarea id="output" class="output-box" readonly></textarea>
@@ -563,7 +600,11 @@
         howBtn: document.getElementById('how-btn'),
         helpModal: document.getElementById('help-modal'),
         closeModal: document.getElementById('close-modal'),
-        year: document.getElementById('year')
+        year: document.getElementById('year'),
+        statusMsg: document.getElementById('status-msg'),
+        clearBtn: document.getElementById('clear-input'),
+        resultCount: document.getElementById('result-count'),
+        countNum: document.getElementById('count-num')
       };
 
       // --- State ---
@@ -572,11 +613,21 @@
       // --- Init ---
       els.year.textContent = new Date().getFullYear();
       initTheme();
+      els.input.focus();
 
       // --- Event Listeners ---
       els.input.addEventListener('input', validateInput);
+      els.input.addEventListener('paste', (e) => {
+        setTimeout(validateInput, 50);
+      });
       els.input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !els.extractBtn.disabled) handleExtract();
+      });
+
+      els.clearBtn.addEventListener('click', () => {
+        els.input.value = '';
+        validateInput();
+        els.input.focus();
       });
 
       els.extractBtn.addEventListener('click', handleExtract);
@@ -602,7 +653,12 @@
       function validateInput() {
         const isValid = isValidPlaylistUrl(els.input.value);
         els.extractBtn.disabled = !isValid;
-        if (isValid) els.errorMsg.classList.add('hidden');
+        if (isValid) {
+          els.errorMsg.classList.add('hidden');
+          updateStatus('Ready to extract');
+        } else {
+          updateStatus('Paste a public playlist URL to begin');
+        }
       }
 
       function isValidPlaylistUrl(url) {
@@ -628,11 +684,13 @@
         setLoading(true);
         els.errorMsg.classList.add('hidden');
         els.resultsArea.classList.remove('visible');
+        updateStatus('Fetching playlist...');
 
         try {
-          // Use corsproxy to fetch the HTML
-          const response = await fetch("https://corsproxy.io/?" + encodeURIComponent(url));
+          // Try multiple CORS proxy endpoints as fallbacks
+          const {res: response, name: proxyName} = await fetchWithProxies(url);
           if (!response.ok) throw new Error("Network response was not ok");
+          updateStatus(`Fetched via ${proxyName}`);
           const html = await response.text();
 
           const videoIds = extractVideoIds(html);
@@ -641,13 +699,14 @@
             throw new Error("No videos found. Is the playlist private?");
           }
 
-          // Generate clean links (just video URL, no playlist param as requested)
-          extractedLinks = Array.from(videoIds).map(id =>
-            `https://www.youtube.com/watch?v=${id}`
-          );
+          // Generate clean links (always produce watch?v links without playlist param)
+          extractedLinks = Array.from(videoIds).map(id => `https://www.youtube.com/watch?v=${id}`);
 
           els.output.value = extractedLinks.join('\n');
           els.resultsArea.classList.add('visible');
+          els.countNum.textContent = extractedLinks.length;
+          els.resultCount.style.display = 'block';
+          updateStatus(`Found ${extractedLinks.length} videos`);
 
           // Scroll to results
           setTimeout(() => {
@@ -663,34 +722,85 @@
         }
       }
 
+      // Try several public CORS proxies as fallback
+      async function fetchWithProxies(targetUrl) {
+        const proxies = [
+          { name: 'corsproxy.io', fn: (t) => fetch('https://corsproxy.io/?' + encodeURIComponent(t)) },
+          { name: 'allorigins', fn: (t) => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(t)) },
+          { name: 'thingproxy', fn: (t) => fetch('https://thingproxy.freeboard.io/fetch/' + t) }
+        ];
+
+        for (const p of proxies) {
+          try {
+            updateStatus(`Trying proxy: ${p.name}...`);
+            const res = await p.fn(targetUrl);
+            if (res && res.ok) return { res, name: p.name };
+            console.warn(`Proxy ${p.name} returned non-ok response, trying next.`);
+          } catch (e) {
+            console.warn(`Proxy ${p.name} attempt failed, trying next.`, e);
+          }
+        }
+        // As a last resort, try to fetch the url directly (may fail due to CORS)
+        try {
+          updateStatus('Trying direct fetch (may be blocked by CORS)...');
+          const direct = await fetch(targetUrl);
+          if (direct && direct.ok) return { res: direct, name: 'direct' };
+        } catch (e) {
+          console.warn('Direct fetch failed (likely CORS).', e);
+        }
+        throw new Error('All proxy attempts failed');
+      }
+
       function extractVideoIds(html) {
         const videoIds = new Set();
 
-        // Method 1: Try to parse ytInitialData (most reliable for full lists)
-        try {
-          const match = html.match(/var ytInitialData = (.*?);<\/script>/s);
-          if (match && match[1]) {
-            const data = JSON.parse(match[1]);
-            // Deep traverse to find playlistVideoRenderer items
-            // This is a simplified traversal, might need recursion for robustness, 
-            // but regex fallback usually catches what this misses.
-            const jsonString = JSON.stringify(data);
-            const idMatches = jsonString.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g);
-            for (const m of idMatches) {
-              videoIds.add(m[1]);
-            }
+        // Helper to extract ids by regex from arbitrary text
+        function extractFromText(text) {
+          // JSON-style matches: "videoId":"XXXXXXXXXXX"
+          for (const m of text.matchAll(/\"videoId\"\s*:\s*\"([a-zA-Z0-9_-]{11})\"/g)) {
+            videoIds.add(m[1]);
           }
-        } catch (e) {
-          console.warn("JSON parse failed, falling back to regex", e);
+          // watch?v= links
+          for (const m of text.matchAll(/watch\?v=([a-zA-Z0-9_-]{11})/g)) {
+            videoIds.add(m[1]);
+          }
+          // data attributes sometimes used
+          for (const m of text.matchAll(/data-video-id=[\"']([a-zA-Z0-9_-]{11})[\"']/g)) {
+            videoIds.add(m[1]);
+          }
         }
 
-        // Method 2: Regex fallback over raw HTML
-        // Look for patterns like /watch?v=VIDEO_ID
-        const regex = /watch\?v=([a-zA-Z0-9_-]{11})/g;
-        let m;
-        while ((m = regex.exec(html)) !== null) {
-          videoIds.add(m[1]);
+        // Try several patterns for ytInitialData / ytInitialPlayerResponse assignments
+        const patterns = [
+          /var ytInitialData = (\{.*?\});/s,
+          /window\[\"ytInitialData\"\]\s*=\s*(\{.*?\});/s,
+          /ytInitialData\s*=\s*(\{.*?\});/s,
+          /var ytInitialPlayerResponse = (\{.*?\});/s,
+          /ytInitialPlayerResponse\s*=\s*(\{.*?\});/s
+        ];
+
+        for (const p of patterns) {
+          const m = html.match(p);
+          if (m && m[1]) {
+            try {
+              const jsonText = m[1];
+              extractFromText(jsonText);
+              // Attempt JSON.parse for deeper traversal when possible
+              try {
+                const parsed = JSON.parse(jsonText);
+                const dumped = JSON.stringify(parsed);
+                extractFromText(dumped);
+              } catch (_) {
+                // ignore parse errors; regex extraction above helps
+              }
+            } catch (e) {
+              console.warn('Failed to extract from initial data pattern', e);
+            }
+          }
         }
+
+        // Global fallback: run wide extractions across the entire HTML
+        extractFromText(html);
 
         return videoIds;
       }
@@ -699,15 +809,22 @@
         if (isLoading) {
           els.spinner.classList.remove('hidden');
           els.extractBtn.classList.add('hidden');
+          updateStatus('Working...');
         } else {
           els.spinner.classList.add('hidden');
           els.extractBtn.classList.remove('hidden');
         }
       }
 
+      function updateStatus(msg) {
+        if (!els.statusMsg) return;
+        els.statusMsg.textContent = msg;
+      }
+
       function showError(msg) {
         els.errorMsg.textContent = msg;
         els.errorMsg.classList.remove('hidden');
+        updateStatus(msg);
       }
 
       function resetApp() {
@@ -718,6 +835,8 @@
         els.extractBtn.disabled = true;
         els.input.focus();
         extractedLinks = [];
+        els.resultCount.style.display = 'none';
+        updateStatus('Paste a public playlist URL to begin');
       }
 
       // --- Export Functions ---

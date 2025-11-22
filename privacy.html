@@ -6,22 +6,95 @@
   <meta name="description" content="Privacy Policy for PlaylistGrab.com - summarizes data handling and contact information.">
   <link rel="canonical" href="https://playlistgrab.com/privacy.html">
   <title>Privacy Policy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 2em; background: #fafafa; color: #222; }
-    h1 { color: #007acc; }
-    .container { max-width: 600px; margin: auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);}
+    :root {
+      --primary: #3b82f6;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --radius: 12px;
+      --shadow: 0 10px 30px rgba(2,6,23,0.06);
+      --container-max: 880px;
+      font-family: 'Inter', system-ui, -apple-system, Arial, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --card: #0f172a;
+        --text: #e6eef8;
+        --muted: #94a3b8;
+        --shadow: 0 8px 20px rgba(2,6,23,0.6);
+      }
+      body { background: var(--bg); color: var(--text); }
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing:antialiased; }
+
+    .skip-link { position:absolute; left:-9999px; top:auto; background:var(--primary); color:#fff; padding:0.5rem 0.75rem; border-radius:0 0 6px 6px; z-index:100; }
+    .skip-link:focus { left:50%; top:0.5rem; transform:translateX(-50%); }
+
+    header { padding:3rem 1rem 1rem; text-align:center; }
+    header a.home { font-weight:800; font-size:1.6rem; text-decoration:none; background:linear-gradient(135deg,var(--primary)0%,#8b5cf6 100%); background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .tagline { color:var(--muted); margin-top:0.5rem; }
+
+    main { max-width:var(--container-max); margin:2rem auto; padding:1rem; }
+    .card { background:var(--card); border-radius:var(--radius); padding:2rem; box-shadow:var(--shadow); border:1px solid rgba(15,23,42,0.03); }
+
+    h1 { margin:0 0 0.5rem; font-size:1.5rem; font-weight:800; }
+    p { color:var(--muted); line-height:1.6; margin:0 0 1rem; }
+    a.button-link { color:var(--primary); text-decoration:none; font-weight:600; }
+
+    .meta { font-size:0.95rem; color:var(--muted); margin-top:1rem; }
+
+    footer { text-align:center; margin-top:2rem; color:var(--muted); padding:2rem 1rem; }
+    .footer-links { display:flex; gap:1rem; justify-content:center; margin-bottom:0.75rem; }
+    .footer-links a { color:var(--muted); text-decoration:none; }
+
+    @media (max-width:520px) {
+      .card { padding:1rem; }
+      header { padding:2rem 1rem 0.5rem; }
+    }
   </style>
-  </head>
+</head>
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
-  <div class="container" id="content" role="main">
-    <h1>Privacy Policy</h1>
-    <p>
-      We do not collect personal information. Any queries you enter here for processing stays on your local machine. We only use Google Search Console to monitor traffic statistics. No other analytics or tracking tools are used.
-    </p>
-    <p>
-      Your privacy is important to us. If you have any questions, please contact us.
-    </p>
-  </div>
+  <header>
+    <a class="home" href="/">PlaylistGrab</a>
+    <div class="tagline">Extract every video link from a public YouTube playlist — fast and private.</div>
+  </header>
+
+  <main>
+    <article class="card" id="content" role="main">
+      <h1>Privacy Policy</h1>
+
+      <p>PlaylistGrab is designed with privacy in mind. We do not collect or store personal information from visitors. Any playlist URL you paste is processed in your browser or via a short-lived proxy to overcome cross-origin restrictions; we do not retain the content.</p>
+
+      <p>We use Google Search Console for aggregate traffic monitoring. We do not run analytics, tracking scripts, or persistent cookies. No third-party advertising is embedded on this site.</p>
+
+      <p class="meta">If you have questions, concerns, or need to report a problem, contact: <a class="button-link" href="mailto:hello@playlistgrab.com">hello@playlistgrab.com</a></p>
+
+      <p class="meta">Last updated: November 22, 2025</p>
+    </article>
+  </main>
+
+  <footer>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/tos.html">Terms</a>
+      <a href="/privacy.html">Privacy</a>
+    </nav>
+    <div>&copy; <span id="year">2025</span> PlaylistGrab</div>
+  </footer>
+
+  <script>
+    // Set year dynamically
+    (function(){ const y = new Date().getFullYear(); const el = document.getElementById('year'); if (el) el.textContent = y; })();
+  </script>
 </body>
 </html>
