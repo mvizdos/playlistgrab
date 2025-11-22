@@ -34,7 +34,7 @@
     }
 
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing:antialiased; }
+    body { margin: 0; background: var(--bg); color: var(--text); -webkit-font-smoothing:antialiased; font-family:var(--font-family); padding-bottom:96px; }
 
     .skip-link { position:absolute; left:-9999px; top:auto; background:var(--primary); color:#fff; padding:0.5rem 0.75rem; border-radius:0 0 6px 6px; z-index:100; }
     .skip-link:focus { left:50%; top:0.5rem; transform:translateX(-50%); }
@@ -52,9 +52,24 @@
 
     .meta { font-size:0.95rem; color:var(--muted); margin-top:1rem; }
 
-    footer { text-align:center; margin-top:2rem; color:var(--muted); padding:2rem 1rem; }
-    .footer-links { display:flex; gap:1rem; justify-content:center; margin-bottom:0.75rem; }
-    .footer-links a { color:var(--muted); text-decoration:none; }
+    /* Bottom navigation used across site */
+    .bottom-nav {
+      position: fixed;
+      inset: auto 0 0 0;
+      height: 64px;
+      background: var(--card);
+      border-top: 1px solid var(--border, #e6eef8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      box-shadow: 0 -6px 18px rgba(2,6,23,0.06);
+      padding: 0 1rem;
+    }
+    .bottom-nav .nav-inner { max-width:var(--container-max); width:100%; display:flex; gap:1rem; align-items:center; justify-content:space-between; }
+    .bottom-nav .nav-links { display:flex; gap:1rem; align-items:center; }
+    .bottom-nav a { color:var(--muted); text-decoration:none; font-weight:600; }
+    .bottom-nav .brand { font-weight:700; background:linear-gradient(135deg,var(--primary)0%,#8b5cf6 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
 
     @media (max-width:520px) {
       .card { padding:1rem; }
@@ -89,13 +104,16 @@
     </article>
   </main>
 
-  <footer>
-    <nav class="footer-links" aria-label="Footer">
-      <a href="/">Home</a>
-      <a href="/tos.html">Terms</a>
-      <a href="/privacy.html">Privacy</a>
-    </nav>
-    <div>&copy; <span id="year">2025</span> PlaylistGrab</div>
+  <footer class="bottom-nav" role="contentinfo" aria-label="Site navigation">
+    <div class="nav-inner">
+      <div class="nav-links">
+        <a class="brand" href="/">PlaylistGrab</a>
+        <a href="/">Home</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/tos.html">Terms</a>
+      </div>
+      <div class="meta">&copy; <span id="year">2025</span></div>
+    </div>
   </footer>
 
   <script>
