@@ -580,6 +580,25 @@
       background: transparent;
       font-weight: 500;
     }
+
+    /* Bottom navigation used across site (copied from privacy.html for consistent layout) */
+    .bottom-nav {
+      position: fixed;
+      inset: auto 0 0 0;
+      height: 64px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      box-shadow: 0 -6px 18px rgba(2,6,23,0.06);
+      padding: 0 1rem;
+    }
+    .bottom-nav .nav-inner { max-width:880px; width:100%; display:flex; gap:1rem; align-items:center; justify-content:space-between; }
+    .bottom-nav .nav-links { display:flex; gap:1rem; align-items:center; }
+    .bottom-nav a { color:var(--text-muted); text-decoration:none; font-weight:600; }
+    .bottom-nav .brand { font-weight:700; background:linear-gradient(135deg,var(--primary)0%,#8b5cf6 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
   </style>
 </head>
 
@@ -681,24 +700,18 @@
     </div>
   </main>
 
-  <footer>
-    <div class="social-icons">
-      <a href="https://youtube.mvizdos.com?utm_source=playlistgrab.com" target="_blank" rel="noopener"
-        class="social-icon" aria-label="YouTube">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png" alt="YouTube">
-      </a>
-      <a href="https://github.com/mvizdos?utm_source=playlistgrab.com" target="_blank" rel="noopener"
-        class="social-icon" aria-label="GitHub">
-        <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub">
-      </a>
+  <footer class="bottom-nav" role="contentinfo" aria-label="Site navigation">
+    <div class="nav-inner">
+      <div class="nav-links">
+        <a class="brand" href="/">PlaylistGrab</a>
+        <a href="/">Home</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/tos.html">Terms</a>
+      </div>
+      <div class="meta">&copy; <span id="year"></span> <span id="app-version" style="margin-left:0.5rem; font-weight:600;">v0.1.0</span></div>
     </div>
-    <div class="footer-links">
-      <a href="privacy.html">Privacy</a>
-      <a href="tos.html">Terms</a>
-    </div>
-    <p>&copy; <span id="year"></span> PlaylistGrab.com <span id="app-version" class="badge muted" style="margin-left:0.5rem; font-weight:600;"></span></p>
-   </footer>
-   
+  </footer>
+
    <!-- Toast Notification -->
    <div id="toast" class="toast">Notification</div>
 
@@ -1051,8 +1064,20 @@
 
         try {
           // Try multiple CORS proxy endpoints as fallbacks
-          const {res: response, name: proxyName} = await fetchWithProxies(url, currentAbortController.signal, 15000);
-          if (!response.ok) throw new Error("Network response was not ok");
+          // Add a safety overall timeout for the initial fetch so the UI doesn't hang indefinitely
+          let response, proxyName;
+          const overallTimer = setTimeout(() => {
+            try { currentAbortController && currentAbortController.abort(); } catch (e) {}
+            addLogEntry('Overall extraction timeout reached (60s)');
+          }, 60000);
+          try {
+            const r = await fetchWithProxies(url, currentAbortController.signal, 15000);
+            response = r.res;
+            proxyName = r.name;
+          } finally {
+            clearTimeout(overallTimer);
+          }
+          if (!response || !response.ok) throw new Error("Network response was not ok");
           updateStatus(`Fetched via ${proxyName}`);
           addLogEntry(`Fetched initial page via ${proxyName}`);
           // show proxy badge
@@ -1192,21 +1217,26 @@
 
     // --- Theme ---
     function initTheme() {
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      // Respect saved preference in localStorage; fall back to system preference
+      const saved = localStorage.getItem('theme');
+      let isDark;
+      if (saved === 'dark') isDark = true;
+      else if (saved === 'light') isDark = false;
+      else isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.body.classList.toggle('dark', isDark);
       // Update toggle icon
       const toggleIcon = document.querySelector('#theme-toggle .icon');
-      toggleIcon.textContent = isDark ? '🌚' : '🌞';
-    }
+      if (toggleIcon) toggleIcon.textContent = isDark ? '🌚' : '🌞';
+     }
 
-    function toggleTheme() {
-      const isDark = document.body.classList.toggle('dark');
-      // Update toggle icon
-      const toggleIcon = document.querySelector('#theme-toggle .icon');
-      toggleIcon.textContent = isDark ? '🌚' : '🌞';
-      // Save preference
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    }
+     function toggleTheme() {
+       const isDark = document.body.classList.toggle('dark');
+       // Update toggle icon
+       const toggleIcon = document.querySelector('#theme-toggle .icon');
+       toggleIcon.textContent = isDark ? '🌚' : '🌞';
+       // Save preference
+       localStorage.setItem('theme', isDark ? 'dark' : 'light');
+     }
 
     // --- Toast ---
     function showToast(msg) {
@@ -1320,6 +1350,33 @@
           const res = await fetchWithTimeout(proxyUrl, { signal }, timeout);
           if (res.ok) {
             addLogEntry(`Proxy ${proxy} succeeded`);
+            // Some proxies (e.g. api.allorigins.win/get?url=) return a JSON wrapper containing the fetched contents.
+            // Detect JSON responses and attempt to unwrap them so callers receive raw HTML.
+            try {
+              const ct = res.headers.get('content-type') || '';
+              if (ct.indexOf('application/json') !== -1) {
+                // attempt to parse and unwrap common wrapper shapes
+                const j = await res.json();
+                // common fields: contents (allorigins), contents or content
+                const inner = j && (j.contents || j.contents_html || j.contents || j.content || j.contents_text);
+                if (typeof inner === 'string' && inner.length > 0) {
+                  addLogEntry(`Proxy ${proxy} returned JSON wrapper, unwrapping contents`);
+                  // Return a Response-like object that yields the inner HTML via .text()
+                  return { res: new Response(inner, { headers: { 'Content-Type': 'text/html' } }), name: proxy };
+                }
+                // Fallback: if the JSON has a 'contents' field that's an object with rendered HTML, stringify it
+                if (j && typeof j === 'object' && j.contents && typeof j.contents === 'object') {
+                  try {
+                    const s = JSON.stringify(j.contents);
+                    return { res: new Response(s, { headers: { 'Content-Type': 'text/html' } }), name: proxy };
+                  } catch (e) { /* ignore and fall through */ }
+                }
+              }
+            } catch (e) {
+              addLogEntry(`Proxy ${proxy} JSON unwrap failed: ${e && e.message}`);
+            }
+
+            // Otherwise return the raw response
             return { res, name: proxy };
           } else {
             lastError = new Error(`Proxy ${proxy} responded with status ${res.status}`);

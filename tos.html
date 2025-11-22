@@ -6,6 +6,8 @@
   <meta name="description" content="Terms of Service for PlaylistGrab.com - outlines usage, liability, and updates.">
   <link rel="canonical" href="https://playlistgrab.com/tos.html">
   <title>Terms Of Service</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -17,61 +19,98 @@
       --radius: 12px;
       --shadow: 0 10px 30px rgba(2,6,23,0.06);
       --container-max: 880px;
+      --border: rgba(15,23,42,0.03);
       font-family: 'Inter', system-ui, -apple-system, Arial, sans-serif;
     }
-    body { margin:0; background:var(--bg); color:var(--text); font-family:var(--font-family); padding-bottom:96px; }
-    .container { max-width:var(--container-max); margin: 2rem auto; background: var(--card); padding: 2rem; border-radius: var(--radius); box-shadow: var(--shadow); border:1px solid rgba(15,23,42,0.03); }
-    h1 { margin:0 0 0.5rem; font-weight:800; }
-    p { color:var(--muted); line-height:1.6; }
-    .meta { margin-top:1rem; color:var(--muted); }
-    .callout { background:#f1f5f9; border-left:4px solid var(--primary); padding:0.75rem 1rem; margin-bottom:1rem; color:var(--text); border-radius:6px; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --card: #0f172a;
+        --text: #e6eef8;
+        --muted: #94a3b8;
+        --shadow: 0 8px 20px rgba(2,6,23,0.6);
+      }
+      body { background: var(--bg); color: var(--text); }
+    }
 
-    /* Bottom navigation */
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; font-family:var(--font-family); padding-bottom:96px; }
+
+    .skip-link { position:absolute; left:-9999px; top:auto; background:var(--primary); color:#fff; padding:0.5rem 0.75rem; border-radius:0 0 6px 6px; z-index:100; }
+    .skip-link:focus { left:50%; top:0.5rem; transform:translateX(-50%); }
+
+    header { padding:3rem 1rem 1rem; text-align:center; }
+    header a.home { font-weight:800; font-size:1.6rem; text-decoration:none; background:linear-gradient(135deg,var(--primary)0%,#8b5cf6 100%); background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .tagline { color:var(--muted); margin-top:0.5rem; }
+
+    main { max-width:var(--container-max); margin:2rem auto; padding:1rem; }
+    .card { background:var(--card); border-radius:var(--radius); padding:2rem; box-shadow:var(--shadow); border:1px solid var(--border); }
+
+    h1 { margin:0 0 0.5rem; font-size:1.5rem; font-weight:800; }
+    p { color:var(--muted); line-height:1.6; margin:0 0 1rem; }
+    a.button-link { color:var(--primary); text-decoration:none; font-weight:600; }
+
+    .meta { font-size:0.95rem; color:var(--muted); margin-top:1rem; }
+
+    /* Bottom navigation used across site */
     .bottom-nav {
-      position: fixed; inset: auto 0 0 0; height: 64px; background: var(--card); border-top:1px solid rgba(15,23,42,0.03); display:flex; align-items:center; justify-content:center; z-index:9999; padding:0 1rem; box-shadow:0 -6px 18px rgba(2,6,23,0.06);
+      position: fixed;
+      inset: auto 0 0 0;
+      height: 64px;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      box-shadow: 0 -6px 18px rgba(2,6,23,0.06);
+      padding: 0 1rem;
     }
     .bottom-nav .nav-inner { max-width:var(--container-max); width:100%; display:flex; gap:1rem; align-items:center; justify-content:space-between; }
+    .bottom-nav .nav-links { display:flex; gap:1rem; align-items:center; }
     .bottom-nav a { color:var(--muted); text-decoration:none; font-weight:600; }
+    .bottom-nav .brand { font-weight:700; background:linear-gradient(135deg,var(--primary)0%,#8b5cf6 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+
+    /* Theme toggle (small, unobtrusive) */
+    .theme-toggle { position: fixed; top: 1rem; right: 1rem; background: transparent; border: none; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; border-radius: 50%; }
+
+    @media (max-width:520px) { .card { padding:1rem; } header { padding:2rem 1rem 0.5rem; } }
   </style>
 </head>
 <body>
   <a class="skip-link" href="#content">Skip to content</a>
-  <div class="container" id="content" role="main">
-    <h1>Terms of Service</h1>
+  <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle Dark Mode"><span class="icon">🌚</span></button>
 
-    <div class="callout"><strong>Effective:</strong> November 22, 2025 — Version 1.1</div>
+  <header>
+    <a class="home" href="/">PlaylistGrab</a>
+    <div class="tagline">Extract every video link from a public YouTube playlist — fast and private.</div>
+  </header>
 
-    <p><strong>Acceptance:</strong> By using PlaylistGrab you agree to these Terms of Service. If you do not agree, do not use the site. Use of the site indicates you accept these terms and that you are authorized to access any playlists you submit.</p>
+  <main>
+    <article class="card" id="content" role="main">
+      <h1>Terms of Service</h1>
 
-    <p><strong>Permitted use:</strong> Use PlaylistGrab only to extract links from playlists you have permission to access. Do not use the service to infringe copyrights, abuse YouTube's service, or automate bulk scraping beyond normal personal use.</p>
+      <div class="callout"><strong>Effective:</strong> November 22, 2025 — Version 1.1</div>
 
-    <p><strong>No warranties:</strong> The service is provided "as is" and "as available." We make no warranties about accuracy, reliability, or availability. Use at your own risk.</p>
+      <p><strong>Acceptance:</strong> By using PlaylistGrab you agree to these Terms of Service. If you do not agree, do not use the site. Use of the site indicates you accept these terms and that you are authorized to access any playlists you submit.</p>
 
-    <p><strong>Limitation of liability:</strong> To the fullest extent permitted by law, PlaylistGrab and its owners are not liable for indirect, incidental, special, consequential, or punitive damages arising out of your access to or use of the service. Direct liability is limited to the extent permitted by applicable law.</p>
+      <p><strong>Permitted use:</strong> Use PlaylistGrab only to extract links from playlists you have permission to access. Do not use the service to infringe copyrights, abuse YouTube's service, or automate bulk scraping beyond normal personal use.</p>
 
-    <p><strong>Indemnification:</strong> You agree to indemnify and hold harmless PlaylistGrab and its owners from any claims, damages, losses, liabilities, and expenses (including reasonable attorneys' fees) arising out of your use of the service, your violation of these terms, or your violation of any rights of a third party.</p>
+      <p><strong>No warranties:</strong> The service is provided "as is" and "as available." We make no warranties about accuracy, reliability, or availability. Use at your own risk.</p>
 
-    <p><strong>Changes:</strong> We may modify or discontinue the service or these terms at any time. Continued use after changes indicates acceptance.</p>
+      <p><strong>Indemnification:</strong> You are solely responsible for your use of the service. To the fullest extent permitted by applicable law, you agree to defend, indemnify, and hold harmless PlaylistGrab and its owners, officers, employees, and agents from and against any and all claims, liabilities, losses, damages, costs, and expenses (including reasonable attorneys' fees) arising out of or relating to (a) your use of the service, (b) your violation of these terms, or (c) your violation of any rights of a third party. PlaylistGrab and its owners shall have no obligation to pay or settle any claim on your behalf, and you will not seek contribution or recovery from PlaylistGrab or its owners for any claims you cause.</p>
 
-    <p><strong>Copyright infringement / DMCA:</strong> If you believe that content available through PlaylistGrab infringes your copyright, please notify us by email at <a href="mailto:hello@playlistgrab.com">hello@playlistgrab.com</a> with the subject line "DMCA Takedown" and include all of the following:
-      <ol>
-        <li>A description of the copyrighted work you claim has been infringed.</li>
-        <li>The URL(s) where the allegedly infringing material appears (please include the full playlist or video link).</li>
-        <li>Your contact information (name, email, and phone number).</li>
-        <li>A statement that you have a good-faith belief that the use is not authorized by the copyright owner, its agent, or the law.</li>
-        <li>A statement, under penalty of perjury, that the information in your notice is accurate and that you are the copyright owner or authorized to act on the owner's behalf.</li>
-        <li>An electronic or physical signature of the copyright owner or a person authorized to act on their behalf.</li>
-      </ol>
-      We will respond to valid DMCA notices and take appropriate action, which may include removing access to the specified content. This is a summary of the procedure and not legal advice.</p>
+      <p><strong>Changes:</strong> We may modify or discontinue the service or these terms at any time. Continued use after changes indicates acceptance.</p>
 
-    <p class="meta"><strong>Governing law:</strong> These terms are governed by the laws of the Commonwealth of Virginia, United States of America.</p>
+      <p><strong>Copyright infringement / DMCA:</strong> If you believe that content available through PlaylistGrab infringes your copyright, please notify us by email at <a class="button-link" href="mailto:hello@playlistgrab.com">hello@playlistgrab.com</a> with the subject line "DMCA Takedown" and include the required information. We will respond to valid DMCA notices and take appropriate action.</p>
 
-    <p class="meta"><strong>Disputes:</strong> Unless otherwise required by law, disputes arising from these terms will be resolved in the state or federal courts located in the Commonwealth of Virginia.</p>
+      <p class="meta"><strong>Governing law:</strong> These terms are governed by the laws of the Commonwealth of Virginia, United States of America.</p>
 
-    <p class="meta">For information on how we handle data, see our <a href="/privacy.html">Privacy Policy</a>.</p>
+      <p class="meta">For information on how we handle data, see our <a href="/privacy.html">Privacy Policy</a>.</p>
 
-    <p class="meta">Questions or concerns? Contact: <a href="mailto:hello@playlistgrab.com">hello@playlistgrab.com</a></p>
-  </div>
+      <p class="meta">Questions or concerns? Contact: <a href="mailto:hello@playlistgrab.com">hello@playlistgrab.com</a></p>
+    </article>
+  </main>
 
   <footer class="bottom-nav" role="contentinfo" aria-label="Site navigation">
     <div class="nav-inner">
@@ -84,5 +123,26 @@
       <div class="meta">Last updated: November 22, 2025</div>
     </div>
   </footer>
+
+  <script>
+    // Theme persistence: apply saved theme and wire toggle
+    (function(){
+      const btn = document.getElementById('theme-toggle');
+      function applySaved(){
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') document.body.classList.add('dark');
+        else if (saved === 'light') document.body.classList.remove('dark');
+        const icon = btn.querySelector('.icon'); if (icon) icon.textContent = document.body.classList.contains('dark') ? '🌚' : '🌞';
+      }
+      applySaved();
+      btn.addEventListener('click', () => {
+        const isDark = document.body.classList.toggle('dark');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        const icon = btn.querySelector('.icon'); if (icon) icon.textContent = isDark ? '🌚' : '🌞';
+      });
+      // Set year if present
+      const y = new Date().getFullYear(); const yr = document.querySelector('.meta'); if (yr) { /* leave meta text as-is */ }
+    })();
+  </script>
 </body>
 </html>
