@@ -476,6 +476,110 @@
     #result-count {
       font-size: 0.95rem;
     }
+
+    /* Modern progress bar */
+    .progress-wrap {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 10px;
+      background: linear-gradient(90deg, var(--border), rgba(0, 0, 0, 0.02));
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary) 0%, #8b5cf6 100%);
+      transition: width 320ms cubic-bezier(.2, .9, .2, 1);
+    }
+
+    /* Indeterminate animation for unknown-length progress */
+    .progress-bar.indeterminate {
+      width: 40%;
+      animation: indeterminate 1.2s linear infinite;
+      background-size: 200% 100%;
+    }
+
+    @keyframes indeterminate {
+      0% {
+        transform: translateX(-10%);
+      }
+
+      50% {
+        transform: translateX(30%);
+      }
+
+      100% {
+        transform: translateX(110%);
+      }
+    }
+
+    .cancel-btn {
+      padding: 0.45rem 0.75rem;
+      font-size: 0.85rem;
+      border-radius: 999px;
+    }
+
+    /* Inline spinner inside progress bar */
+    .progress-indicator {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      margin-left: 8px;
+      vertical-align: middle;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .hidden-inline {
+      display: none !important;
+    }
+
+    /* Log area for proxy and page events */
+    .log-area {
+      margin-top: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-family: monospace;
+      font-size: 0.85rem;
+      padding: 0.5rem;
+      border-radius: 8px;
+      max-height: 160px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    /* Small status badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.85rem;
+      border-radius: 999px;
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+
+    .badge.muted {
+      color: var(--text-muted);
+      border-color: transparent;
+      background: transparent;
+      font-weight: 500;
+    }
   </style>
 </head>
 
@@ -507,8 +611,38 @@
             a watch URL that includes <code>?list=</code>.</small>
         </div>
 
-        <div id="status-msg" class="status-msg" aria-live="polite"
-          style="margin-top:0.75rem;color:var(--text-muted);"></div>
+        <div id="status-controls" style="display:flex; gap:0.5rem; align-items:center; margin-top:0.5rem;">
+          <div style="flex:1;">
+            <div id="status-msg" class="status-msg" aria-live="polite" style="color:var(--text-muted);"></div>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <label for="max-pages" style="font-size:0.85rem; color:var(--text-muted);">Max pages:</label>
+            <input id="max-pages" type="number" min="1" max="100" value="25"
+              style="width:64px; padding:6px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-main);">
+            <label for="retry-count" style="font-size:0.85rem; color:var(--text-muted);">Retries:</label>
+            <input id="retry-count" type="number" min="0" max="5" value="3"
+              style="width:52px; padding:6px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-main);">
+          </div>
+        </div>
+        <div id="progress" style="margin-top:0.5rem; display:none;">
+          <div class="progress-wrap">
+            <div class="progress-track" aria-hidden="true">
+              <div id="progress-bar" class="progress-bar" style="width:0%">
+                <span id="progress-indicator" class="progress-indicator hidden-inline" aria-hidden="true"></span>
+              </div>
+            </div>
+            <button id="cancel-btn" class="btn btn-secondary cancel-btn" style="display:none;" aria-label="Cancel fetch">Cancel</button>
+            <button id="details-btn" class="btn btn-secondary" style="display:inline-flex; margin-left:0.25rem;" aria-pressed="false">Details</button>
+            <button id="download-log-btn" class="btn btn-secondary" style="display:none; margin-left:0.25rem; font-size:0.85rem;" aria-label="Download log">Download log</button>
+          </div>
+          <div id="progress-text" style="font-size:0.95rem; color:var(--text-muted); text-align:center; margin-top:0.4rem;">0 / 0</div>
+          <div id="progress-estimate" style="font-size:0.95rem; color:var(--text-muted); text-align:center; margin-top:0.25rem; display:none;">Estimated: — pages</div>
+          <div style="display:flex; gap:0.5rem; justify-content:center; margin-top:0.4rem;">
+            <div id="found-badge" class="badge" style="display:none;">Found: <span id="found-count">0</span></div>
+            <div id="proxy-badge" class="badge muted" style="display:none;">Proxy: <span id="proxy-name"></span></div>
+          </div>
+          <div id="log-area" class="log-area" style="display:none;" aria-live="polite"></div>
+        </div>
 
         <button type="button" id="extract-btn" class="btn btn-primary" disabled>
           Extract Links
@@ -532,6 +666,7 @@
           <button type="button" id="copy-btn" class="btn btn-secondary">Copy</button>
           <button type="button" id="txt-btn" class="btn btn-secondary">Save TXT</button>
           <button type="button" id="csv-btn" class="btn btn-secondary">Save CSV</button>
+          <button type="button" id="json-btn" class="btn btn-secondary">Export JSON</button>
         </div>
 
         <div class="text-center mt-4">
@@ -561,11 +696,11 @@
       <a href="privacy.html">Privacy</a>
       <a href="tos.html">Terms</a>
     </div>
-    <p>&copy; <span id="year"></span> PlaylistGrab.com</p>
-  </footer>
-
-  <!-- Toast Notification -->
-  <div id="toast" class="toast">Notification</div>
+    <p>&copy; <span id="year"></span> PlaylistGrab.com <span id="app-version" class="badge muted" style="margin-left:0.5rem; font-weight:600;"></span></p>
+   </footer>
+   
+   <!-- Toast Notification -->
+   <div id="toast" class="toast">Notification</div>
 
   <!-- Help Modal -->
   <div id="help-modal" class="modal-backdrop">
@@ -573,16 +708,19 @@
       <button id="close-modal" class="close-modal" aria-label="Close">&times;</button>
       <h2 id="modal-title" style="margin-top:0; font-size:1.25rem;">How it works</h2>
       <ul style="padding-left: 1.2rem; color: var(--text-muted);">
-        <li>Paste a <strong>public</strong> YouTube playlist URL.</li>
-        <li>Click <strong>Extract Links</strong>.</li>
-        <li>We'll fetch all the video URLs for you.</li>
-        <li>Copy them or download as TXT/CSV.</li>
+        <li>Open the playlist on YouTube (desktop or mobile), tap <strong>Share</strong> → <strong>Copy link</strong>, then paste that link here.</li>
+        <li>Alternatively, paste any URL that includes <code>?list=</code> (watch pages, shared links, and mobile URLs are supported).</li>
+        <li>Click <strong>Extract Links</strong> to fetch all video URLs from the playlist.</li>
+        <li>Copy the results or download them as TXT/CSV.</li>
       </ul>
     </div>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Application version (follow CHANGELOG.md / tags)
+      const APP_VERSION = '0.1.0';
+
       // --- Elements ---
       const els = {
         input: document.getElementById('playlist-url'),
@@ -594,6 +732,7 @@
         copyBtn: document.getElementById('copy-btn'),
         txtBtn: document.getElementById('txt-btn'),
         csvBtn: document.getElementById('csv-btn'),
+        jsonBtn: document.getElementById('json-btn'),
         resetBtn: document.getElementById('reset-btn'),
         themeToggle: document.getElementById('theme-toggle'),
         toast: document.getElementById('toast'),
@@ -601,24 +740,194 @@
         helpModal: document.getElementById('help-modal'),
         closeModal: document.getElementById('close-modal'),
         year: document.getElementById('year'),
+        appVersion: document.getElementById('app-version'),
         statusMsg: document.getElementById('status-msg'),
         clearBtn: document.getElementById('clear-input'),
         resultCount: document.getElementById('result-count'),
-        countNum: document.getElementById('count-num')
+        countNum: document.getElementById('count-num'),
+        progress: document.getElementById('progress'),
+        progressBar: document.getElementById('progress-bar'),
+        progressText: document.getElementById('progress-text'),
+        foundBadge: document.getElementById('found-badge'),
+        foundCount: document.getElementById('found-count'),
+        proxyBadge: document.getElementById('proxy-badge'),
+        proxyName: document.getElementById('proxy-name'),
+        maxPagesInput: document.getElementById('max-pages'),
+        retryCountInput: document.getElementById('retry-count'),
+        cancelBtn: document.getElementById('cancel-btn')
+        , progressIndicator: document.getElementById('progress-indicator')
+        , progressEstimate: document.getElementById('progress-estimate')
+        , logArea: document.getElementById('log-area')
+        , detailsBtn: document.getElementById('details-btn')
+        , downloadLogBtn: document.getElementById('download-log-btn')
       };
 
       // --- State ---
+      // extractedLinks is array of objects: { position, id, title, url, duration, available }
       let extractedLinks = [];
+      let currentAbortController = null;
+      let isFetching = false;
+      let logEntries = []; // store timestamped log lines for download/debug
+      let detailsVisible = false;
+      // remember whether details were visible before an auto-show so we can restore preference
+      let _prevDetailsVisible = false;
+      // track whether the most recent run encountered an error (keep details visible on error)
+      let _lastRunHadError = false;
+
+      // Centralized setter for details visibility so multiple places can reuse the logic
+      function setDetailsVisible(visible) {
+        detailsVisible = !!visible;
+        els.detailsBtn.setAttribute('aria-pressed', detailsVisible ? 'true' : 'false');
+        if (detailsVisible) {
+          try {
+            els.logArea.style.display = 'block';
+            els.logArea.textContent = logEntries.join('\n');
+            els.downloadLogBtn.style.display = logEntries.length > 0 ? 'inline-flex' : 'none';
+            els.detailsBtn.textContent = 'Hide details';
+          } catch (e) { /* ignore */ }
+        } else {
+          try {
+            els.logArea.style.display = 'none';
+            els.downloadLogBtn.style.display = 'none';
+            els.detailsBtn.textContent = 'Details';
+          } catch (e) { /* ignore */ }
+        }
+      }
+
+      function setLoading(on) {
+        isFetching = !!on;
+        // Spinner + buttons
+        if (isFetching) {
+          els.spinner.classList.remove('hidden');
+          els.extractBtn.disabled = true;
+          els.cancelBtn.style.display = 'inline-flex';
+          els.cancelBtn.disabled = false;
+          // disable exports while fetching
+          els.copyBtn.disabled = true;
+          els.txtBtn.disabled = true;
+          els.csvBtn.disabled = true;
+          els.jsonBtn.disabled = true;
+          els.resetBtn.disabled = true;
+        } else {
+          els.spinner.classList.add('hidden');
+          els.extractBtn.disabled = false;
+          els.cancelBtn.style.display = 'none';
+          els.cancelBtn.disabled = true;
+          els.copyBtn.disabled = false;
+          els.txtBtn.disabled = false;
+          els.csvBtn.disabled = false;
+          els.jsonBtn.disabled = false;
+          els.resetBtn.disabled = false;
+        }
+      }
+
+      // Helper: fetch with per-request timeout and support external abort signal
+      async function fetchWithTimeout(input, init = {}, timeout = 15000, externalSignal = null) {
+        const localCtrl = new AbortController();
+        const localSignal = localCtrl.signal;
+        // If external signal aborts, abort local
+        if (externalSignal) {
+          if (externalSignal.aborted) localCtrl.abort();
+          else externalSignal.addEventListener('abort', () => localCtrl.abort(), { once: true });
+        }
+        const id = setTimeout(() => localCtrl.abort(), timeout);
+        try {
+          const res = await fetch(input, { ...init, signal: localSignal });
+          clearTimeout(id);
+          return res;
+        } catch (e) {
+          clearTimeout(id);
+          throw e;
+        }
+      }
 
       // --- Init ---
       els.year.textContent = new Date().getFullYear();
+      try { if (els.appVersion) els.appVersion.textContent = `v${APP_VERSION}`; } catch (e) {}
       initTheme();
       els.input.focus();
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      // Cancel control
+      els.cancelBtn.addEventListener('click', () => {
+        if (currentAbortController) {
+          currentAbortController.abort();
+          // Offer an undo (restart) action via toast so users can quickly retry
+          showToast('Fetch cancelled', 'Undo', () => {
+            // Slight delay so UI resets before restarting
+            setTimeout(() => handleExtract(), 200);
+          });
+          updateStatus('Cancelled by user');
+          setLoading(false);
+        }
+      });
+
+      // Logging helper: append entries to the log area and keep it visible
+      function addLogEntry(msg) {
+        try {
+          const ts = new Date().toLocaleTimeString();
+          const line = `[${ts}] ${msg}`;
+          // store raw entry for download (sanitization applied on export)
+          logEntries.unshift(line);
+          if (logEntries.length > 1000) logEntries.length = 1000;
+          // update visible area only if user opened details
+          if (detailsVisible) {
+            els.logArea.style.display = 'block';
+            els.logArea.textContent = line + '\n' + els.logArea.textContent;
+            if (els.logArea.textContent.length > 20000) els.logArea.textContent = els.logArea.textContent.substring(0, 20000);
+          }
+          // Keep download button visible if we have entries
+          if (logEntries.length > 0) els.downloadLogBtn.style.display = detailsVisible ? 'inline-flex' : 'none';
+        } catch (e) { console.warn('Log write failed', e); }
+      }
+
+      // Toggle details visibility
+      els.detailsBtn.addEventListener('click', () => setDetailsVisible(!detailsVisible));
+
+      // Download sanitized log
+      els.downloadLogBtn.addEventListener('click', () => {
+        try {
+          const raw = logEntries.slice().reverse().join('\n'); // oldest-first
+          const sanitized = sanitizeLogForDownload(raw);
+          const blob = new Blob([sanitized], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `playlistgrab-log-${new Date().toISOString().slice(0,19)}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (e) { console.warn('Download failed', e); }
+      });
+
+      function sanitizeLogForDownload(s) {
+        // redact URLs and long tokens
+        let out = String(s);
+        // Replace URLs
+        out = out.replace(/https?:\/\/[^\s]+/g, '[REDACTED_URL]');
+        // Replace long alphanumeric tokens (likely continuation tokens) of length >= 25
+        out = out.replace(/([A-Za-z0-9_\-]{25,})/g, '[REDACTED]');
+        return out;
+      }
+
+      // --- Auto-show details behavior ---
+      // When a user initiates an extraction we auto-show the details/log area for transparency.
+      // If the user had details open before the run we preserve that preference. If the run
+      // completes successfully and the details were previously closed, we auto-hide the details
+      // after a short delay. If the run errors or is cancelled we keep details visible so users
+      // can inspect what happened.
 
       // --- Event Listeners ---
       els.input.addEventListener('input', validateInput);
       els.input.addEventListener('paste', (e) => {
-        setTimeout(validateInput, 50);
+        setTimeout(() => {
+          validateInput();
+          // On mobile, automatically start extraction after paste for one-tap flow
+          if (isMobile && !els.extractBtn.disabled) {
+            handleExtract();
+          }
+        }, 50);
       });
       els.input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !els.extractBtn.disabled) handleExtract();
@@ -634,6 +943,7 @@
       els.copyBtn.addEventListener('click', copyToClipboard);
       els.txtBtn.addEventListener('click', downloadTxt);
       els.csvBtn.addEventListener('click', downloadCsv);
+      els.jsonBtn.addEventListener('click', downloadJson);
       els.resetBtn.addEventListener('click', resetApp);
 
       els.themeToggle.addEventListener('click', toggleTheme);
@@ -663,12 +973,47 @@
 
       function isValidPlaylistUrl(url) {
         if (!url) return false;
-        // Matches standard playlist URLs and watch URLs with list param
-        return /[?&]list=([a-zA-Z0-9_-]{10,})/.test(url);
+        try {
+          let u = url.trim();
+          if (!/^[a-zA-Z]+:\/\//.test(u)) u = 'https://' + u; // allow pasted URLs without scheme
+          const parsed = new URL(u);
+          // Check query param
+          const list = parsed.searchParams.get('list');
+          if (list && list.length > 0) return true;
+          // Check fragment/hash for list= (some shared URLs include it there)
+          if (parsed.hash && /[#&?]list=/.test(parsed.hash)) return true;
+          // fallback to regex if URL parsing didn't find it (handles odd inputs)
+          return /(?:[?&#]|\b)list=([A-Za-z0-9_-]+)/.test(url);
+        } catch (e) {
+          // If URL constructor fails (malformed input), fall back to regex
+          return /(?:[?&#]|\b)list=([A-Za-z0-9_-]+)/.test(url);
+        }
       }
 
       function getPlaylistId(url) {
-        const match = url.match(/[?&]list=([a-zA-Z0-9_-]{10,})/);
+        if (!url) return null;
+        try {
+          let u = url.trim();
+          if (!/^[a-zA-Z]+:\/\//.test(u)) u = 'https://' + u;
+          const parsed = new URL(u);
+          // Prefer query param
+          const list = parsed.searchParams.get('list');
+          if (list) return list;
+          // Check fragment/hash (e.g. #list=... or #/watch?v=...&list=...)
+          if (parsed.hash) {
+            const h = parsed.hash;
+            const q = h.replace(/^#/, ''); // remove leading #
+            const qp = new URLSearchParams(q);
+            const fromHash = qp.get('list');
+            if (fromHash) return fromHash;
+            // fallback: regex in hash
+            const hm = q.match(/list=([A-Za-z0-9_-]+)/);
+            if (hm) return hm[1];
+          }
+        } catch (e) {
+          // ignore and fall back to regex below
+        }
+        const match = url.match(/(?:[?&#]|\b)list=([A-Za-z0-9_-]+)/);
         return match ? match[1] : null;
       }
 
@@ -681,6 +1026,22 @@
           return;
         }
 
+        // Reset logs and UI from any previous run
+        // keep UI minimal for end users
+        logEntries = [];
+        try { els.logArea.textContent = ''; els.logArea.style.display = 'none'; } catch (e) {}
+        try { els.downloadLogBtn.style.display = 'none'; } catch (e) {}
+        try { els.foundBadge.style.display = 'none'; els.proxyBadge.style.display = 'none'; } catch (e) {}
+        try { els.progressBar.style.width = '0%'; els.progressBar.classList.remove('indeterminate'); els.progressIndicator.classList.add('hidden-inline'); } catch (e) {}
+        addLogEntry('Starting extraction');
+
+        // Auto-show details for this run, but remember previous state so we can restore it on success
+        _prevDetailsVisible = detailsVisible;
+        _lastRunHadError = false;
+        setDetailsVisible(true);
+
+        // prepare an abort controller for this extraction run
+        currentAbortController = new AbortController();
         setLoading(true);
         els.errorMsg.classList.add('hidden');
         els.resultsArea.classList.remove('visible');
@@ -688,219 +1049,477 @@
 
         try {
           // Try multiple CORS proxy endpoints as fallbacks
-          const {res: response, name: proxyName} = await fetchWithProxies(url);
+          const {res: response, name: proxyName} = await fetchWithProxies(url, currentAbortController.signal, 15000);
           if (!response.ok) throw new Error("Network response was not ok");
           updateStatus(`Fetched via ${proxyName}`);
-          const html = await response.text();
+          addLogEntry(`Fetched initial page via ${proxyName}`);
+          // show proxy badge
+          try { els.proxyName.textContent = proxyName; els.proxyBadge.style.display = 'inline-flex'; } catch (e) {}
+            const html = await response.text();
 
-          const videoIds = extractVideoIds(html);
+          // Extract ordered video data (id + title + duration + availability) when possible
+          const { videos, continuations } = extractVideoData(html);
 
-          if (videoIds.size === 0) {
-            throw new Error("No videos found. Is the playlist private?");
+          if (!videos || videos.length === 0) {
+            throw new Error("No videos found. Is the playlist private or inaccessible?");
           }
 
-          // Generate clean links (always produce watch?v links without playlist param)
-          extractedLinks = Array.from(videoIds).map(id => `https://www.youtube.com/watch?v=${id}`);
+          // Initialize extractedLinks from first batch
+          extractedLinks = videos.map((v, i) => ({
+            position: i + 1,
+            id: v.id || '',
+            title: v.title || '',
+            duration: v.duration || '',
+            thumbnail: v.thumbnail || '',
+            available: v.available !== false,
+            url: v.id ? `https://www.youtube.com/watch?v=${v.id}` : ''
+          }));
+          // update found badge with initial count
+          try { els.foundCount.textContent = String(extractedLinks.length); els.foundBadge.style.display = 'inline-flex'; } catch (e) {}
 
-          els.output.value = extractedLinks.join('\n');
-          els.resultsArea.classList.add('visible');
-          els.countNum.textContent = extractedLinks.length;
-          els.resultCount.style.display = 'block';
-          updateStatus(`Found ${extractedLinks.length} videos`);
+           // If continuations exist, attempt progressive fetches (with safe limits)
+           if (continuations && continuations.length > 0) {
+             updateStatus('Fetching remaining pages...');
+             els.progress.style.display = 'block';
+             try {
+               // Show inline indicator if indeterminate
+               const moreVideos = await fetchContinuations(continuations, playlistId, { signal: currentAbortController.signal, onProgress: onContinuationProgress });
+               if (moreVideos && moreVideos.length > 0) {
+                 // append to extractedLinks preserving order and updating positions
+                 const startPos = extractedLinks.length + 1;
+                 moreVideos.forEach((v, idx) => {
+                   extractedLinks.push({
+                     position: startPos + idx,
+                     id: v.id || '',
+                     title: v.title || '',
+                     duration: v.duration || '',
+                     thumbnail: v.thumbnail || '',
+                     available: v.available !== false,
+                     url: v.id ? `https://www.youtube.com/watch?v=${v.id}` : ''
+                   });
+                 });
+                 // update found badge live
+                 try { els.foundCount.textContent = String(extractedLinks.length); } catch (e) {}
+               }
+             } catch (e) {
+               console.warn('Continuation fetch failed', e);
+               addLogEntry('Continuation fetch encountered errors: ' + (e && e.message));
+               // Show partial results and note
+               showToast('Partial results: some pages could not be fetched.');
+             } finally {
+               els.progress.style.display = 'none';
+               // hide any indeterminate indicator
+               els.progressIndicator.classList.add('hidden-inline');
+               els.progressEstimate.style.display = 'none';
+             }
+           }
 
-          // Scroll to results
-          setTimeout(() => {
-            els.resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            els.output.focus();
-          }, 100);
+          // Show only URLs in the textarea (one per line)
+          els.output.value = extractedLinks.filter(x => x.url).map(x => x.url).join('\n');
+           els.resultsArea.classList.add('visible');
+           els.countNum.textContent = extractedLinks.length;
+           els.resultCount.style.display = 'block';
+           const availableCount = extractedLinks.filter(x => x.available && x.url).length;
+           const unavailableCount = extractedLinks.length - availableCount;
+           updateStatus(`Found ${extractedLinks.length} entries — ${availableCount} available, ${unavailableCount} private/removed`);
 
-        } catch (err) {
-          console.error(err);
-          showError("Failed to load playlist. Make sure it's public and try again.");
-        } finally {
-          setLoading(false);
-        }
-      }
+           // Scroll to results
+           setTimeout(() => {
+             els.resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+             els.output.focus();
+           }, 100);
 
-      // Try several public CORS proxies as fallback
-      async function fetchWithProxies(targetUrl) {
-        const proxies = [
-          { name: 'corsproxy.io', fn: (t) => fetch('https://corsproxy.io/?' + encodeURIComponent(t)) },
-          { name: 'allorigins', fn: (t) => fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(t)) },
-          { name: 'thingproxy', fn: (t) => fetch('https://thingproxy.freeboard.io/fetch/' + t) }
-        ];
+         } catch (err) {
+           console.error(err);
+           _lastRunHadError = true;
+           if (err.name === 'AbortError') {
+             showToast('Fetch aborted');
+             updateStatus('Fetch aborted');
+             // keep details open so user can see cancellation logs
+             setDetailsVisible(true);
+           } else {
+             showError("Failed to load playlist. Make sure it's public and try again.");
+             // keep details visible so the user can inspect logs
+             setDetailsVisible(true);
+           }
+         } finally {
+           setLoading(false);
+           currentAbortController = null;
+           // If the user had details closed before the run and this run succeeded with no errors,
+           // restore the closed state after a short delay so the user sees progress briefly.
+           if (!_lastRunHadError && !_prevDetailsVisible) {
+             setTimeout(() => setDetailsVisible(false), 1400);
+           }
+         }
+       }
 
-        for (const p of proxies) {
-          try {
-            updateStatus(`Trying proxy: ${p.name}...`);
-            const res = await p.fn(targetUrl);
-            if (res && res.ok) return { res, name: p.name };
-            console.warn(`Proxy ${p.name} returned non-ok response, trying next.`);
-          } catch (e) {
-            console.warn(`Proxy ${p.name} attempt failed, trying next.`, e);
-          }
-        }
-        // As a last resort, try to fetch the url directly (may fail due to CORS)
-        try {
-          updateStatus('Trying direct fetch (may be blocked by CORS)...');
-          const direct = await fetch(targetUrl);
-          if (direct && direct.ok) return { res: direct, name: 'direct' };
-        } catch (e) {
-          console.warn('Direct fetch failed (likely CORS).', e);
-        }
-        throw new Error('All proxy attempts failed');
-      }
-
-      function extractVideoIds(html) {
-        const videoIds = new Set();
-
-        // Helper to extract ids by regex from arbitrary text
-        function extractFromText(text) {
-          // JSON-style matches: "videoId":"XXXXXXXXXXX"
-          for (const m of text.matchAll(/\"videoId\"\s*:\s*\"([a-zA-Z0-9_-]{11})\"/g)) {
-            videoIds.add(m[1]);
-          }
-          // watch?v= links
-          for (const m of text.matchAll(/watch\?v=([a-zA-Z0-9_-]{11})/g)) {
-            videoIds.add(m[1]);
-          }
-          // data attributes sometimes used
-          for (const m of text.matchAll(/data-video-id=[\"']([a-zA-Z0-9_-]{11})[\"']/g)) {
-            videoIds.add(m[1]);
-          }
-        }
-
-        // Try several patterns for ytInitialData / ytInitialPlayerResponse assignments
-        const patterns = [
-          /var ytInitialData = (\{.*?\});/s,
-          /window\[\"ytInitialData\"\]\s*=\s*(\{.*?\});/s,
-          /ytInitialData\s*=\s*(\{.*?\});/s,
-          /var ytInitialPlayerResponse = (\{.*?\});/s,
-          /ytInitialPlayerResponse\s*=\s*(\{.*?\});/s
-        ];
-
-        for (const p of patterns) {
-          const m = html.match(p);
-          if (m && m[1]) {
-            try {
-              const jsonText = m[1];
-              extractFromText(jsonText);
-              // Attempt JSON.parse for deeper traversal when possible
-              try {
-                const parsed = JSON.parse(jsonText);
-                const dumped = JSON.stringify(parsed);
-                extractFromText(dumped);
-              } catch (_) {
-                // ignore parse errors; regex extraction above helps
-              }
-            } catch (e) {
-              console.warn('Failed to extract from initial data pattern', e);
-            }
-          }
-        }
-
-        // Global fallback: run wide extractions across the entire HTML
-        extractFromText(html);
-
-        return videoIds;
-      }
-
-      function setLoading(isLoading) {
-        if (isLoading) {
-          els.spinner.classList.remove('hidden');
-          els.extractBtn.classList.add('hidden');
-          updateStatus('Working...');
+      // Called by continuation fetcher to update progress UI
+      function onContinuationProgress(processedPages, totalPagesEstimate, totalVideos) {
+        // If totalPagesEstimate unknown, show indeterminate percentage based on pages processed vs maxPagesInput
+        const maxPages = Number(els.maxPagesInput.value) || 8;
+        if (totalPagesEstimate && totalPagesEstimate > 0) {
+          // determinate
+          els.progressBar.classList.remove('indeterminate');
+          // hide inline indicator in determinate mode
+          els.progressIndicator.classList.add('hidden-inline');
+          const pct = Math.min(100, Math.round((processedPages / totalPagesEstimate) * 100));
+          els.progressBar.style.width = pct + '%';
+          els.progressText.textContent = `${processedPages} / ${totalPagesEstimate} pages · ${totalVideos} videos`;
+          try { els.foundCount.textContent = String(totalVideos); els.foundBadge.style.display = 'inline-flex'; } catch (e) {}
         } else {
-          els.spinner.classList.add('hidden');
-          els.extractBtn.classList.remove('hidden');
+          // indeterminate — animate and show processed count
+          els.progressBar.classList.add('indeterminate');
+          // show inline indicator to convey activity
+          els.progressIndicator.classList.remove('hidden-inline');
+          // keep a modest visual width while animating
+          els.progressBar.style.width = '40%';
+          els.progressText.textContent = `${processedPages} pages fetched · ${totalVideos} videos`;
+          try { els.foundCount.textContent = String(totalVideos); els.foundBadge.style.display = 'inline-flex'; } catch (e) {}
         }
       }
 
-      function updateStatus(msg) {
-        if (!els.statusMsg) return;
-        els.statusMsg.textContent = msg;
+      // make log entries visible to developers via console but keep UI minimal
+      const originalAddLogEntry = addLogEntry;
+      function addLogEntry(msg) {
+        // still push into our internal log and update UI when requested
+        try { originalAddLogEntry(msg); } catch (e) { console.warn(e); }
+        // developer-friendly output to console
+        try { console.debug('[PlaylistGrab]', msg); } catch (e) {}
       }
+    });
 
-      function showError(msg) {
-        els.errorMsg.textContent = msg;
-        els.errorMsg.classList.remove('hidden');
-        updateStatus(msg);
-      }
+    // --- Theme ---
+    function initTheme() {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.body.classList.toggle('dark', isDark);
+      // Update toggle icon
+      const toggleIcon = document.querySelector('#theme-toggle .icon');
+      toggleIcon.textContent = isDark ? '🌚' : '🌞';
+    }
 
-      function resetApp() {
-        els.input.value = '';
-        els.output.value = '';
-        els.resultsArea.classList.remove('visible');
-        els.errorMsg.classList.add('hidden');
-        els.extractBtn.disabled = true;
-        els.input.focus();
-        extractedLinks = [];
-        els.resultCount.style.display = 'none';
-        updateStatus('Paste a public playlist URL to begin');
-      }
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle('dark');
+      // Update toggle icon
+      const toggleIcon = document.querySelector('#theme-toggle .icon');
+      toggleIcon.textContent = isDark ? '🌚' : '🌞';
+      // Save preference
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
 
-      // --- Export Functions ---
-
-      function copyToClipboard() {
-        if (!els.output.value) return;
-        navigator.clipboard.writeText(els.output.value).then(() => {
-          showToast("Copied to clipboard!");
-        });
-      }
-
-      function downloadTxt() {
-        if (!els.output.value) return;
-        downloadFile(els.output.value, 'playlist-links.txt', 'text/plain');
-        showToast("TXT file downloaded!");
-      }
-
-      function downloadCsv() {
-        if (extractedLinks.length === 0) return;
-        // Simple CSV: just the URL in the first column
-        const csvContent = extractedLinks.join('\n');
-        downloadFile(csvContent, 'playlist-links.csv', 'text/csv');
-        showToast("CSV file downloaded!");
-      }
-
-      function downloadFile(content, fileName, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-
-      // --- UI Utilities ---
-
-      function showToast(msg) {
+    // --- Toast ---
+    function showToast(msg) {
+      // Backwards-compatible: showToast(msg) or showToast(msg, actionText, actionCallback)
+      const actionText = arguments[1];
+      const actionCb = arguments[2];
+      if (actionText && typeof actionCb === 'function') {
+        els.toast.innerHTML = `<span>${escapeHtml(String(msg))}</span> <button id="toast-action" class="btn btn-secondary" style="margin-left:0.5rem; padding:0.25rem 0.5rem; font-size:0.85rem;">${escapeHtml(String(actionText))}</button>`;
+        els.toast.classList.add('active');
+        const btn = document.getElementById('toast-action');
+        const cleanup = () => { els.toast.classList.remove('active'); btn.removeEventListener('click', onClick); };
+        const onClick = () => { try { actionCb(); } catch (e) {} finally { cleanup(); } };
+        btn.addEventListener('click', onClick);
+        setTimeout(() => { if (els.toast.classList.contains('active')) els.toast.classList.remove('active'); }, 4000);
+      } else {
         els.toast.textContent = msg;
         els.toast.classList.add('active');
         setTimeout(() => els.toast.classList.remove('active'), 3000);
       }
+    }
 
-      function initTheme() {
-        const isDark = localStorage.getItem('theme') === 'dark' ||
-          (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        if (isDark) document.body.classList.add('dark');
-        updateThemeIcon();
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // --- Status Message ---
+    function updateStatus(message) {
+      els.statusMsg.textContent = message;
+    }
+
+    // --- Error Handling ---
+    function showError(message) {
+      els.errorMsg.textContent = message;
+      els.errorMsg.classList.remove('hidden');
+      setTimeout(() => {
+        els.errorMsg.classList.add('hidden');
+      }, 5000);
+    }
+
+    // --- Copy to Clipboard ---
+    async function copyToClipboard() {
+      if (!extractedLinks || extractedLinks.length === 0) return;
+      const urls = extractedLinks.filter(x => x.url).map(x => x.url).join('\n');
+      try {
+        await navigator.clipboard.writeText(urls);
+        showToast('Links copied to clipboard!');
+      } catch (err) {
+        showError('Failed to copy links. Please try again.');
+      }
+    }
+
+    // --- Downloads ---
+    function downloadTxt() {
+      downloadFile('txt');
+    }
+
+    function downloadCsv() {
+      downloadFile('csv');
+    }
+
+    function downloadJson() {
+      downloadFile('json');
+    }
+
+    function downloadFile(format) {
+      if (!extractedLinks || extractedLinks.length === 0) return;
+      const dataStr = format === 'json'
+        ? JSON.stringify(extractedLinks, null, 2)
+        : extractedLinks.filter(x => x.url).map(x => x.url).join('\n');
+      const blob = new Blob([dataStr], { type: format === 'json' ? 'application/json' : 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `playlist-links.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+
+    // --- Reset ---
+    function resetApp() {
+      els.input.value = '';
+      els.output.value = '';
+      els.resultsArea.classList.remove('visible');
+      els.errorMsg.classList.add('hidden');
+      updateStatus('Paste a public playlist URL to begin');
+      extractedLinks = [];
+    }
+
+    // --- Proxies ---
+    // List of CORS proxy endpoints to use as fallbacks
+    const corsProxies = [
+      'https://thingproxy.freeboard.io/fetch/',
+      'https://api.allorigins.win/raw?url=',
+      'https://api.allorigins.win/get?url=',
+      'https://cors.bridged.cc/',
+      'https://cors-anywhere.herokuapp.com/'
+    ];
+
+    // Try fetching with each proxy in the list until one succeeds or all fail. If proxies fail, also try a direct fetch as a last resort.
+    async function fetchWithProxies(url, signal, timeout = 15000) {
+      let lastError = null;
+      addLogEntry('Starting proxy attempts');
+      for (const proxy of corsProxies) {
+        const proxyUrl = proxy + encodeURIComponent(url);
+        try {
+          addLogEntry(`Trying proxy ${proxy}...`);
+          const res = await fetchWithTimeout(proxyUrl, { signal }, timeout);
+          if (res.ok) {
+            addLogEntry(`Proxy ${proxy} succeeded`);
+            return { res, name: proxy };
+          } else {
+            lastError = new Error(`Proxy ${proxy} responded with status ${res.status}`);
+            addLogEntry(`Proxy ${proxy} responded with status ${res.status}`);
+          }
+        } catch (err) {
+          lastError = err;
+          addLogEntry(`Proxy ${proxy} failed: ${err && err.message}`);
+        }
+      }
+      // As a last resort, try a direct fetch (no proxy). This may fail due to CORS in many browsers, but it's worth attempting.
+      try {
+        addLogEntry('Attempting direct fetch as last resort');
+        const res = await fetchWithTimeout(url, { signal, mode: 'cors' }, timeout);
+        if (res.ok) {
+          addLogEntry('Direct fetch succeeded');
+          return { res, name: 'direct' };
+        } else {
+          lastError = new Error(`Direct fetch responded with status ${res.status}`);
+          addLogEntry(`Direct fetch responded with status ${res.status}`);
+        }
+      } catch (err) {
+        lastError = err;
+        addLogEntry(`Direct fetch failed: ${err && err.message}`);
       }
 
-      function toggleTheme() {
-        document.body.classList.toggle('dark');
-        const isDark = document.body.classList.contains('dark');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        updateThemeIcon();
+      addLogEntry('All proxy + direct fetch attempts failed');
+      throw new Error(`All proxies and direct fetch failed: ${lastError && lastError.message}`);
+    }
+
+    // --- Continuation Fetching ---
+    async function fetchContinuations(continuations, playlistId, { signal, onProgress }) {
+      const maxPages = Math.max(1, Number(els.maxPagesInput.value) || 25);
+      const total = Array.isArray(continuations) ? continuations.length : 0;
+      let processed = 0;
+      let allVideos = [];
+      addLogEntry(`Starting continuation fetch: ${total} tokens, maxPages ${maxPages}`);
+      if (total > 0) {
+        els.progressEstimate.style.display = 'block';
+        els.progressEstimate.textContent = `Estimated: ${total} pages`;
       }
 
-      function updateThemeIcon() {
-        const isDark = document.body.classList.contains('dark');
-        els.themeToggle.querySelector('.icon').textContent = isDark ? '🌞' : '🌚';
+      // Try common URL forms for continuation tokens. Some tokens are page numbers, others are opaque tokens that need to be passed as pageToken/continuation.
+      for (const cont of continuations) {
+        if (signal && signal.aborted) throw new Error('Aborted');
+        if (processed >= maxPages) break;
+
+        // Build a small list of candidate URLs to try for this continuation token
+        const candidates = [
+          `https://www.youtube.com/playlist?list=${playlistId}&pageToken=${encodeURIComponent(cont)}`,
+          `https://www.youtube.com/playlist?list=${playlistId}&continuation=${encodeURIComponent(cont)}`,
+          `https://www.youtube.com/playlist?list=${playlistId}&page=${encodeURIComponent(cont)}`,
+          // browse_ajax-like pattern (may work on some setups) - we attempt a GET to the browse endpoint which sometimes returns JSON
+          `https://www.youtube.com/browse_ajax?ctoken=${encodeURIComponent(cont)}&continuation=${encodeURIComponent(cont)}&key=`
+        ];
+
+        let pageVideos = null;
+        for (const url of candidates) {
+          try {
+            if (signal && signal.aborted) throw new Error('Aborted');
+            addLogEntry(`Trying continuation URL: ${url}`);
+            const { videos } = await fetchPlaylistPage(url, signal);
+            if (videos && videos.length > 0) {
+              pageVideos = videos;
+              addLogEntry(`Continuation URL succeeded with ${videos.length} videos`);
+              break; // stop trying other candidates for this cont
+            }
+          } catch (e) {
+            addLogEntry(`Continuation candidate failed: ${e && e.message}`);
+            // try next candidate
+          }
+        }
+
+        if (pageVideos && pageVideos.length > 0) {
+          allVideos = allVideos.concat(pageVideos);
+          processed++;
+        }
+
+        if (onProgress) onProgress(processed, total, allVideos.length);
       }
-    });
+
+      addLogEntry(`Continuation fetching complete: ${processed} pages, ${allVideos.length} videos`);
+      return allVideos;
+    }
+
+    // --- Playlist Page Fetching ---
+    async function fetchPlaylistPage(url, signal) {
+      const res = await fetchWithTimeout(url, { signal }).catch(err => { throw err; });
+      const text = await res.text();
+      // Extract video data from the page HTML
+      const { videos } = extractVideoData(text);
+      addLogEntry(`Fetched playlist page: ${videos.length} videos from ${url}`);
+      return { videos };
+    }
+
+    // --- Video Data Extraction ---
+    function extractVideoData(html) {
+      const videos = [];
+      const continuations = [];
+
+      // Helper: simple HTML entity decode for titles
+      function decodeHtmlEntities(str) {
+        try {
+          const txt = document.createElement('textarea');
+          txt.innerHTML = str;
+          return txt.value;
+        } catch (e) { return str; }
+      }
+
+      // 1) Try to find structured JSON (ytInitialData or similar) inside scripts
+      try {
+        const jsonMatch = html.match(/var ytInitialData = (\{[\s\S]*?\});/) || html.match(/window\["ytInitialData"\] = (\{[\s\S]*?\});/) || html.match(/ytInitialData\s*=\s*(\{[\s\S]*?\});/);
+        if (jsonMatch && jsonMatch[1]) {
+          try {
+            const data = JSON.parse(jsonMatch[1]);
+            // Walk the object looking for playlistVideoRenderer/videoRenderer nodes
+            const stack = [data];
+            while (stack.length) {
+              const node = stack.pop();
+              if (!node || typeof node !== 'object') continue;
+              // playlistVideoRenderer
+              if (node.playlistVideoRenderer && node.playlistVideoRenderer.videoId) {
+                const p = node.playlistVideoRenderer;
+                videos.push({
+                  id: p.videoId,
+                  title: (p.title && (p.title.simpleText || (p.title.runs && p.title.runs[0] && p.title.runs[0].text))) || '',
+                  duration: (p.lengthText && (p.lengthText.simpleText || '')) || '',
+                  thumbnail: (p.thumbnail && p.thumbnail.thumbnails && p.thumbnail.thumbnails.slice(-1)[0] && p.thumbnail.thumbnails.slice(-1)[0].url) || '',
+                  available: p.isPlayable !== false
+                });
+              }
+              // videoRenderer (watch page list entries)
+              if (node.videoRenderer && node.videoRenderer.videoId) {
+                const v = node.videoRenderer;
+                videos.push({
+                  id: v.videoId,
+                  title: (v.title && (v.title.simpleText || (v.title.runs && v.title.runs[0] && v.title.runs[0].text))) || '',
+                  duration: (v.lengthText && (v.lengthText.simpleText || '')) || '',
+                  thumbnail: (v.thumbnail && v.thumbnail.thumbnails && v.thumbnail.thumbnails.slice(-1)[0] && v.thumbnail.thumbnails.slice(-1)[0].url) || '',
+                  available: v.isPlayable !== false
+                });
+              }
+              // continuations
+              if (node.continuation) continuations.push(node.continuation);
+              if (node.continuationToken) continuations.push(node.continuationToken);
+
+              for (const k in node) {
+                if (node[k] && typeof node[k] === 'object') stack.push(node[k]);
+              }
+            }
+          } catch (e) {
+            addLogEntry('Failed to parse ytInitialData JSON: ' + e.message);
+          }
+        }
+      } catch (e) { /* ignore */ }
+
+      // 2) Regex fallbacks for various compressed structures
+      try {
+        // pattern: "videoRenderer":{ ... "videoId":"..." ... "title":{"runs":[{"text":"..."}]}
+        const vrRegex = /"videoRenderer"\s*:\s*\{([\s\S]*?)\}\s*\}/g;
+        let m;
+        while ((m = vrRegex.exec(html)) !== null) {
+          const chunk = m[1];
+          const idm = chunk.match(/"videoId"\s*:\s*"([^"]+)"/);
+          const titlem = chunk.match(/"title"\s*:\s*\{[\s\S]*?"text"\s*:\s*"([^"]+)"/) || chunk.match(/"title"\s*:\s*\{[\s\S]*?"simpleText"\s*:\s*"([^"]+)"/);
+          const lengthm = chunk.match(/"lengthText"\s*:\s*\{[\s\S]*?"simpleText"\s*:\s*"([^"]+)"/);
+          if (idm) {
+            videos.push({ id: idm[1], title: decodeHtmlEntities(titlem ? titlem[1] : ''), duration: lengthm ? lengthm[1] : '', thumbnail: '', available: true });
+          }
+        }
+      } catch (e) { /* ignore */ }
+
+      // 3) Simple generic regex (legacy)
+      try {
+        const simpleRegex = new RegExp('"videoId":"([^\\\\n]+)"[\\s\\S]*?"title":(?:\\{"runs":\\[{"text":"([^"\\\\n]+)"/g');
+        let sm;
+        while ((sm = simpleRegex.exec(html)) !== null) {
+          videos.push({ id: sm[1], title: decodeHtmlEntities(sm[2]), duration: '', thumbnail: '', available: true });
+        }
+      } catch (e) { /* ignore */ }
+
+      // 4) fallback: look for continuation tokens in the raw HTML
+      try {
+        const contRegex = /continuation"\s*:\s*"([^"]+)"/g;
+        let c;
+        while ((c = contRegex.exec(html)) !== null) {
+          continuations.push(c[1]);
+        }
+      } catch (e) { /* ignore */ }
+
+      // dedupe videos by id while preserving order
+      const seen = new Set();
+      const ordered = [];
+      for (const v of videos) {
+        if (!v.id) continue;
+        if (seen.has(v.id)) continue;
+        seen.add(v.id);
+        ordered.push(v);
+      }
+
+      return { videos: ordered, continuations: Array.from(new Set(continuations)) };
+    }
   </script>
 </body>
 
