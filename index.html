@@ -825,10 +825,12 @@
       async function fetchWithTimeout(input, init = {}, timeout = 15000, externalSignal = null) {
         const localCtrl = new AbortController();
         const localSignal = localCtrl.signal;
+        // Prefer explicit externalSignal param, fall back to init.signal (so callers can pass signal via init or as argument)
+        const ext = externalSignal || init.signal || null;
         // If external signal aborts, abort local
-        if (externalSignal) {
-          if (externalSignal.aborted) localCtrl.abort();
-          else externalSignal.addEventListener('abort', () => localCtrl.abort(), { once: true });
+        if (ext) {
+          if (ext.aborted) localCtrl.abort();
+          else ext.addEventListener('abort', () => localCtrl.abort(), { once: true });
         }
         const id = setTimeout(() => localCtrl.abort(), timeout);
         try {
