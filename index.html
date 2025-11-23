@@ -1264,7 +1264,15 @@
 
     // --- Status Message ---
     function updateStatus(message) {
-      els.statusMsg.textContent = message;
+      try {
+        // Prefer the cached els.statusMsg when available inside the DOMContentLoaded scope
+        if (typeof els !== 'undefined' && els && els.statusMsg) {
+          els.statusMsg.textContent = message;
+          return;
+        }
+      } catch (e) { /* fall through to DOM lookup */ }
+      const el = document.getElementById('status-msg');
+      if (el) el.textContent = message;
     }
 
     // --- Error Handling ---
