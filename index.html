@@ -767,37 +767,60 @@
       } catch (e) { return str; }
     }
 
+    // Message System: Three types of user feedback
+    // 1. STATUS: Persistent status under the input (shows current state)
+    // 2. ERROR: Red error box that auto-dismisses (for validation/fetch errors)
+    // 3. TOAST: Bottom popup notification (for success messages)
+
     function updateStatus(message) {
-      try {
-        if (els && els.statusMsg) {
-          els.statusMsg.textContent = message;
-          return;
-        }
-      } catch (e) { /* fall through */ }
-      const el = document.getElementById('status-msg');
-      if (el) el.textContent = message;
+      // Status message: Shows what the app is currently doing
+      // Examples: "Ready to extract", "Fetching playlist...", "Found 50 videos"
+      if (!els.statusMsg) return;
+      els.statusMsg.textContent = message;
+      els.statusMsg.style.color = 'var(--text-muted)';
     }
 
     function showError(message) {
+      // Error message: Red box for errors, auto-hides after 5 seconds
+      // Examples: "Invalid playlist URL", "Failed to load playlist"
       if (!els.errorMsg) return;
       els.errorMsg.textContent = message;
       els.errorMsg.classList.remove('hidden');
+      
+      // Also update status to match the error
+      updateStatus('Error - please try again');
+      
       setTimeout(() => {
         els.errorMsg.classList.add('hidden');
       }, 5000);
     }
 
     function showToast(msg, actionText, actionCb) {
+      // Toast: Bottom popup for success/info, auto-hides after 3 seconds
+      // Examples: "Links copied!", "Found 50 videos!", "Fetch cancelled"
+      // Can optionally include an action button (e.g., "Undo")
       if (!els.toast) return;
+      
       if (actionText && typeof actionCb === 'function') {
+        // Toast with action button
         els.toast.innerHTML = `<span>${escapeHtml(String(msg))}</span> <button id="toast-action" class="btn btn-secondary" style="margin-left:0.5rem; padding:0.25rem 0.5rem; font-size:0.85rem;">${escapeHtml(String(actionText))}</button>`;
         els.toast.classList.add('active');
         const btn = document.getElementById('toast-action');
-        const cleanup = () => { els.toast.classList.remove('active'); btn.removeEventListener('click', onClick); };
-        const onClick = () => { try { actionCb(); } catch (e) {} finally { cleanup(); } };
+        const cleanup = () => { 
+          els.toast.classList.remove('active'); 
+          btn.removeEventListener('click', onClick); 
+        };
+        const onClick = () => { 
+          try { actionCb(); } 
+          catch (e) {} 
+          finally { cleanup(); } 
+        };
         btn.addEventListener('click', onClick);
-        setTimeout(() => { if (els.toast.classList.contains('active')) els.toast.classList.remove('active'); }, 4000);
+        setTimeout(() => { 
+          if (els.toast.classList.contains('active')) cleanup(); 
+        }, 4000);
       } else {
+        // Simple toast message
         els.toast.textContent = msg;
         els.toast.classList.add('active');
         setTimeout(() => els.toast.classList.remove('active'), 3000);
