@@ -926,9 +926,9 @@
       els.extractBtn.disabled = !isValid;
       if (isValid) {
         els.errorMsg.classList.add('hidden');
-        updateStatus('Ready to extract');
+        updateStatus('Ready to go! Click Extract Links');
       } else {
-        updateStatus('Paste a public playlist URL to begin');
+        updateStatus('Paste a YouTube playlist link to get started');
       }
     }
 
@@ -1215,7 +1215,7 @@
       setLoading(true);
       els.errorMsg.classList.add('hidden');
       els.resultsArea.classList.remove('visible');
-      updateStatus('Fetching playlist...');
+      updateStatus('Loading your playlist...');
 
       try {
         let response, proxyName;
@@ -1231,9 +1231,14 @@
           clearTimeout(overallTimer);
         }
         if (!response || !response.ok) throw new Error("Network response was not ok");
-        updateStatus(`Fetched via ${proxyName}`);
+        
+        // Show friendly status instead of technical proxy details
+        updateStatus('Processing playlist data...');
         addLogEntry(`Fetched initial page via ${proxyName}`);
+        
+        // Show proxy in badge for technical users who want details
         try { els.proxyName.textContent = proxyName; els.proxyBadge.style.display = 'inline-flex'; } catch (e) {}
+        
         const html = await response.text();
 
         const { videos, continuations } = extractVideoData(html);
@@ -1254,7 +1259,7 @@
         try { els.foundCount.textContent = String(extractedLinks.length); els.foundBadge.style.display = 'inline-flex'; } catch (e) {}
 
         if (continuations && continuations.length > 0) {
-          updateStatus('Fetching remaining pages...');
+          updateStatus('Loading more videos...');
           els.progress.style.display = 'block';
           try {
             const moreVideos = await fetchContinuations(continuations, playlistId, { signal: currentAbortController.signal, onProgress: onContinuationProgress });
@@ -1276,7 +1281,7 @@
           } catch (e) {
             console.warn('Continuation fetch failed', e);
             addLogEntry('Continuation fetch encountered errors: ' + (e && e.message));
-            showToast('Partial results: some pages could not be fetched.');
+            showToast('Got most videos, but some pages couldn\'t be loaded');
           } finally {
             els.progress.style.display = 'none';
             els.progressIndicator.classList.add('hidden-inline');
@@ -1290,7 +1295,7 @@
         els.resultCount.style.display = 'block';
         const availableCount = extractedLinks.filter(x => x.available && x.url).length;
         const unavailableCount = extractedLinks.length - availableCount;
-        updateStatus(`Found ${extractedLinks.length} entries — ${availableCount} available, ${unavailableCount} private/removed`);
+        updateStatus(`Found ${extractedLinks.length} videos — ${availableCount} available, ${unavailableCount} unavailable`);
 
         setTimeout(() => {
           els.resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1301,11 +1306,11 @@
         console.error(err);
         _lastRunHadError = true;
         if (err.name === 'AbortError') {
-          showToast('Fetch aborted');
-          updateStatus('Fetch aborted');
+          showToast('Stopped loading playlist');
+          updateStatus('Cancelled');
           setDetailsVisible(true);
         } else {
-          showError("Failed to load playlist. Make sure it's public and try again.");
+          showError("Couldn't load the playlist. Make sure it's public and try again!");
           setDetailsVisible(true);
         }
       } finally {
