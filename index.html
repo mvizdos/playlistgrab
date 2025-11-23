@@ -1215,6 +1215,21 @@
       }
     });
 
+    // Safe global logger so code outside the DOMContentLoaded scope can call addLogEntry without crashing
+    if (typeof window.addLogEntry !== 'function') {
+      window.addLogEntry = function(msg) {
+        try {
+          const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
+          // also mirror to console.debug for developer inspection
+          if (typeof console !== 'undefined' && console.debug) console.debug('[PlaylistGrab]', msg);
+          // if the in-page logger exists (set inside DOMContentLoaded), call it to keep a single source
+          if (typeof window._internalAddLogEntry === 'function') {
+            try { window._internalAddLogEntry(msg); } catch (e) { /* ignore */ }
+          }
+        } catch (e) { /* ignore */ }
+      };
+    }
+
     // --- Theme ---
     function initTheme() {
       // Respect saved preference in localStorage; fall back to system preference
