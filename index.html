@@ -634,13 +634,12 @@
           <div style="flex:1;">
             <div id="status-msg" class="status-msg" aria-live="polite" style="color:var(--text-muted);"></div>
           </div>
-          <div style="display:flex; gap:0.5rem; align-items:center;">
-            <label for="max-pages" style="font-size:0.85rem; color:var(--text-muted);">Max pages:</label>
+          <!-- Advanced controls - only show when NOT loading and details panel is open -->
+          <div id="advanced-controls" style="display:none; gap:0.5rem; align-items:center;">
+            <label for="max-pages" style="font-size:0.85rem; color:var(--text-muted);" title="Maximum number of pages to fetch (each page ~100 videos)">Max pages:</label>
             <input id="max-pages" type="number" min="1" max="100" value="25"
-              style="width:64px; padding:6px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-main);">
-            <label for="retry-count" style="font-size:0.85rem; color:var(--text-muted);">Retries:</label>
-            <input id="retry-count" type="number" min="0" max="5" value="3"
-              style="width:52px; padding:6px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-main);">
+              style="width:64px; padding:6px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-main);"
+              title="Limit how many pages to load. Increase for very large playlists (1000+ videos)">
           </div>
         </div>
         <div id="progress" style="margin-top:0.5rem; display:none;">
@@ -651,7 +650,7 @@
               </div>
             </div>
             <button id="cancel-btn" class="btn btn-secondary cancel-btn" style="display:none;" aria-label="Cancel fetch">Cancel</button>
-            <button id="details-btn" class="btn btn-secondary" style="display:inline-flex; margin-left:0.25rem;" aria-pressed="false">Details</button>
+            <button id="details-btn" class="btn btn-secondary" style="display:inline-flex; margin-left:0.25rem;" aria-pressed="false" title="Show technical details and advanced options">Details</button>
             <button id="download-log-btn" class="btn btn-secondary" style="display:none; margin-left:0.25rem; font-size:0.85rem;" aria-label="Download log">Download log</button>
           </div>
           <div id="progress-text" style="font-size:0.95rem; color:var(--text-muted); text-align:center; margin-top:0.4rem;">0 / 0</div>
@@ -856,18 +855,29 @@
       detailsVisible = !!visible;
       if (!els.detailsBtn) return;
       els.detailsBtn.setAttribute('aria-pressed', detailsVisible ? 'true' : 'false');
+      
+      // Show/hide advanced controls - but ONLY if we're not currently loading
+      // (controls are for setup before extraction, not during/after)
+      const advancedControls = document.getElementById('advanced-controls');
+      if (advancedControls) {
+        const shouldShowControls = detailsVisible && !isFetching;
+        advancedControls.style.display = shouldShowControls ? 'flex' : 'none';
+      }
+      
       if (detailsVisible) {
         try {
           els.logArea.style.display = 'block';
           els.logArea.textContent = logEntries.join('\n');
           els.downloadLogBtn.style.display = logEntries.length > 0 ? 'inline-flex' : 'none';
           els.detailsBtn.textContent = 'Hide details';
+          els.detailsBtn.title = 'Hide technical details and advanced options';
         } catch (e) { /* ignore */ }
       } else {
         try {
           els.logArea.style.display = 'none';
           els.downloadLogBtn.style.display = 'none';
           els.detailsBtn.textContent = 'Details';
+          els.detailsBtn.title = 'Show technical details and advanced options';
         } catch (e) { /* ignore */ }
       }
     }
@@ -1295,7 +1305,15 @@
         els.resultCount.style.display = 'block';
         const availableCount = extractedLinks.filter(x => x.available && x.url).length;
         const unavailableCount = extractedLinks.length - availableCount;
-        updateStatus(`Found ${extractedLinks.length} videos — ${availableCount} available, ${unavailableCount} unavailable`);
+        
+        // Show user-friendly status based on results
+        if (unavailableCount === 0) {
+          updateStatus(`Found ${extractedLinks.length} videos — all available!`);
+        } else if (unavailableCount === extractedLinks.length) {
+          updateStatus(`Found ${extractedLinks.length} videos — all unavailable (private, deleted, or restricted)`);
+        } else {
+          updateStatus(`Found ${extractedLinks.length} videos — ${availableCount} available, ${unavailableCount} unavailable (private, deleted, or restricted)`);
+        }
 
         setTimeout(() => {
           els.resultsArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1368,7 +1386,7 @@
       els.output.value = '';
       els.resultsArea.classList.remove('visible');
       els.errorMsg.classList.add('hidden');
-      updateStatus('Paste a public playlist URL to begin');
+      updateStatus('Paste a YouTube playlist link to get started');
       extractedLinks = [];
     }
 
@@ -1441,10 +1459,10 @@
       els.cancelBtn.addEventListener('click', () => {
         if (currentAbortController) {
           currentAbortController.abort();
-          showToast('Fetch cancelled', 'Undo', () => {
+          showToast('Stopped loading', 'Undo', () => {
             setTimeout(() => handleExtract(), 200);
           });
-          updateStatus('Cancelled by user');
+          updateStatus('Cancelled');
           setLoading(false);
         }
       });
