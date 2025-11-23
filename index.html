@@ -151,6 +151,9 @@
       font-weight: 600;
       margin-bottom: 0.5rem;
       font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+      color: var(--text-main);
     }
 
     input[type="text"] {
@@ -471,10 +474,37 @@
 
     .status-msg {
       font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .status-msg.ready {
+      color: var(--success);
+    }
+
+    .status-msg.processing {
+      color: var(--primary);
+    }
+
+    .status-msg.error {
+      color: var(--danger);
     }
 
     #result-count {
-      font-size: 0.95rem;
+      font-size: 1rem;
+      font-weight: 600;
+      background: var(--primary-light);
+      padding: 0.75rem;
+      border-radius: 8px;
+      color: var(--primary);
+    }
+
+    body.dark #result-count {
+      background: rgba(96, 165, 250, 0.1);
+    }
+
+    #count-num {
+      font-weight: 700;
+      font-size: 1.1rem;
     }
 
     /* Modern progress bar */
@@ -626,8 +656,9 @@
             <button type="button" id="clear-input" class="btn btn-secondary clear-btn" aria-label="Clear input">✕
             </button>
           </div>
-          <small style="color:var(--text-muted); display:block; margin-top:0.5rem;">Paste a public YouTube playlist or
-            a watch URL that includes <code>?list=</code>.</small>
+          <small style="color:var(--text-muted); display:block; margin-top:0.5rem; font-size:0.85rem; line-height:1.4;">
+            <strong>Step 1:</strong> Paste any YouTube playlist URL here (public playlists only)
+          </small>
         </div>
 
         <div id="status-controls" style="display:flex; gap:0.5rem; align-items:center; margin-top:0.5rem;">
@@ -663,7 +694,7 @@
         </div>
 
         <button type="button" id="extract-btn" class="btn btn-primary" disabled>
-          Extract Links
+          <strong>Step 2:</strong> Extract Links
         </button>
 
         <div id="spinner" class="spinner hidden" role="status" aria-label="Loading"></div>
@@ -672,11 +703,11 @@
 
       <div id="results-area" class="results-area">
         <div id="result-count"
-          style="text-align:center; color:var(--text-muted); margin-bottom:0.5rem; display:none;">
-          Found <span id="count-num">0</span> videos
+          style="text-align:center; margin-bottom:1rem; display:none;">
+          ✓ Found <span id="count-num">0</span> videos
         </div>
         <div class="input-group">
-          <label for="output">Your Links</label>
+          <label for="output">Step 3: Your Extracted Links</label>
           <textarea id="output" class="output-box" readonly></textarea>
         </div>
 
@@ -771,12 +802,26 @@
     // 2. ERROR: Red error box that auto-dismisses (for validation/fetch errors)
     // 3. TOAST: Bottom popup notification (for success messages)
 
-    function updateStatus(message) {
+    function updateStatus(message, type = 'default') {
       // Status message: Shows what the app is currently doing
       // Examples: "Ready to extract", "Fetching playlist...", "Found 50 videos"
+      // Types: 'default', 'ready', 'processing', 'error'
       if (!els.statusMsg) return;
       els.statusMsg.textContent = message;
-      els.statusMsg.style.color = 'var(--text-muted)';
+      
+      // Remove all state classes
+      els.statusMsg.classList.remove('ready', 'processing', 'error');
+      
+      // Add appropriate state class for color coding
+      if (type === 'ready') {
+        els.statusMsg.classList.add('ready');
+      } else if (type === 'processing') {
+        els.statusMsg.classList.add('processing');
+      } else if (type === 'error') {
+        els.statusMsg.classList.add('error');
+      } else {
+        els.statusMsg.style.color = 'var(--text-muted)';
+      }
     }
 
     function showError(message) {
@@ -936,9 +981,9 @@
       els.extractBtn.disabled = !isValid;
       if (isValid) {
         els.errorMsg.classList.add('hidden');
-        updateStatus('Ready to go! Click Extract Links');
+        updateStatus('✓ Ready to go! Click Extract Links', 'ready');
       } else {
-        updateStatus('Paste a YouTube playlist link to get started');
+        updateStatus('Paste a YouTube playlist link to get started', 'default');
       }
     }
 
@@ -1225,7 +1270,7 @@
       setLoading(true);
       els.errorMsg.classList.add('hidden');
       els.resultsArea.classList.remove('visible');
-      updateStatus('Loading your playlist...');
+      updateStatus('⏳ Loading your playlist...', 'processing');
 
       try {
         let response, proxyName;
@@ -1243,7 +1288,7 @@
         if (!response || !response.ok) throw new Error("Network response was not ok");
         
         // Show friendly status instead of technical proxy details
-        updateStatus('Processing playlist data...');
+        updateStatus('⏳ Processing playlist data...', 'processing');
         addLogEntry(`Fetched initial page via ${proxyName}`);
         
         // Show proxy in badge for technical users who want details
@@ -1269,7 +1314,7 @@
         try { els.foundCount.textContent = String(extractedLinks.length); els.foundBadge.style.display = 'inline-flex'; } catch (e) {}
 
         if (continuations && continuations.length > 0) {
-          updateStatus('Loading more videos...');
+          updateStatus('⏳ Loading more videos...', 'processing');
           els.progress.style.display = 'block';
           try {
             const moreVideos = await fetchContinuations(continuations, playlistId, { signal: currentAbortController.signal, onProgress: onContinuationProgress });
@@ -1308,11 +1353,11 @@
         
         // Show user-friendly status based on results
         if (unavailableCount === 0) {
-          updateStatus(`Found ${extractedLinks.length} videos — all available!`);
+          updateStatus(`✓ Found ${extractedLinks.length} videos — all available!`, 'ready');
         } else if (unavailableCount === extractedLinks.length) {
-          updateStatus(`Found ${extractedLinks.length} videos — all unavailable (private, deleted, or restricted)`);
+          updateStatus(`Found ${extractedLinks.length} videos — all unavailable (private, deleted, or restricted)`, 'default');
         } else {
-          updateStatus(`Found ${extractedLinks.length} videos — ${availableCount} available, ${unavailableCount} unavailable (private, deleted, or restricted)`);
+          updateStatus(`✓ Found ${extractedLinks.length} videos — ${availableCount} available, ${unavailableCount} unavailable (private, deleted, or restricted)`, 'ready');
         }
 
         setTimeout(() => {
@@ -1325,10 +1370,11 @@
         _lastRunHadError = true;
         if (err.name === 'AbortError') {
           showToast('Stopped loading playlist');
-          updateStatus('Cancelled');
+          updateStatus('Cancelled', 'default');
           setDetailsVisible(true);
         } else {
           showError("Couldn't load the playlist. Make sure it's public and try again!");
+          updateStatus('Error - please try again', 'error');
           setDetailsVisible(true);
         }
       } finally {
@@ -1386,7 +1432,7 @@
       els.output.value = '';
       els.resultsArea.classList.remove('visible');
       els.errorMsg.classList.add('hidden');
-      updateStatus('Paste a YouTube playlist link to get started');
+      updateStatus('Paste a YouTube playlist link to get started', 'default');
       extractedLinks = [];
     }
 
