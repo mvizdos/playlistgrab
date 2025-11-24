@@ -643,6 +643,9 @@
   <header>
     <h1>PlaylistGrab</h1>
     <p class="tagline">Extract all your YouTube playlist links, instantly.</p>
+    <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 600px; margin: 0.5rem auto 0; line-height: 1.5;">
+      <strong>Note:</strong> This tool relies on third-party proxy services to access YouTube. If you experience errors, the proxies may be temporarily down or rate-limited. Please try again in a few minutes.
+    </p>
   </header>
 
   <main id="main-content">
@@ -775,12 +778,18 @@
     let isMobile = false;
 
     // --- CORS PROXIES ---
+    // TODO - DONE 11/24/25: Replace with your own Cloudflare Worker URL for production
+    // Example: 'https://playlistgrab-proxy.your-account.workers.dev/?url='
     const corsProxies = [
-      'https://thingproxy.freeboard.io/fetch/',
+      // Add your Cloudflare Worker here as the first option:
+      'https://playlistgrab-proxy.mvizdos.workers.dev/?url=',
+      
+      // Fallback to public proxies (unreliable, rate-limited)
+      'https://api.codetabs.com/v1/proxy?quest=', // 5 req/sec limit
       'https://api.allorigins.win/raw?url=',
-      'https://api.allorigins.win/get?url=',
-      'https://cors.bridged.cc/',
-      'https://cors-anywhere.herokuapp.com/'
+      'https://corsproxy.io/?url=', // 1MB limit on free tier
+      'https://proxy.cors.sh/', // Requires origin header
+      'https://crossorigin.me/' // 2MB limit, GET only
     ];
 
     // --- UTILITY FUNCTIONS (moved outside DOMContentLoaded) ---
@@ -957,22 +966,21 @@
       }
     }
 
-    async function fetchWithTimeout(input, init = {}, timeout = 15000, externalSignal = null) {
-      const localCtrl = new AbortController();
-      const localSignal = localCtrl.signal;
-      const ext = externalSignal || init.signal || null;
-      if (ext) {
-        if (ext.aborted) localCtrl.abort();
-        else ext.addEventListener('abort', () => localCtrl.abort(), { once: true });
-      }
-      const id = setTimeout(() => localCtrl.abort(), timeout);
-      try {
-        const res = await fetch(input, { ...init, signal: localSignal });
-        clearTimeout(id);
-        return res;
-      } catch (e) {
-        clearTimeout(id);
-        throw e;
+    // Fetch with timeout using Promise.race instead of AbortSignal
+    // This avoids cloning issues with proxies and cross-origin contexts
+    async function fetchWithTimeout(input, init = {}, timeout = 15000) {
+      return Promise.race([
+        fetch(input, init),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), timeout)
+        )
+      ]);
+    }
+
+    // Simple abort check function - checks global state
+    function checkAborted() {
+      if (currentAbortController && currentAbortController.signal.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
       }
     }
 
@@ -1026,61 +1034,82 @@
       return match ? match[1] : null;
     }
 
-    async function fetchWithProxies(url, signal, timeout = 15000) {
+    async function fetchWithProxies(url, timeout = 15000) {
       let lastError = null;
+      const errors = [];
       addLogEntry('Starting proxy attempts');
+      
       for (const proxy of corsProxies) {
+        // Check if user cancelled
+        checkAborted();
+        
         const proxyUrl = proxy + encodeURIComponent(url);
         try {
           addLogEntry(`Trying proxy ${proxy}...`);
-          const res = await fetchWithTimeout(proxyUrl, { signal }, timeout);
-          if (res.ok) {
-            addLogEntry(`Proxy ${proxy} succeeded`);
-            try {
-              const ct = res.headers.get('content-type') || '';
-              if (ct.indexOf('application/json') !== -1) {
-                const j = await res.json();
-                const inner = j && (j.contents || j.contents_html || j.content || j.contents_text);
-                if (typeof inner === 'string' && inner.length > 0) {
-                  addLogEntry(`Proxy ${proxy} returned JSON wrapper, unwrapping contents`);
-                  return { res: new Response(inner, { headers: { 'Content-Type': 'text/html' } }), name: proxy };
-                }
-                if (j && typeof j === 'object' && j.contents && typeof j.contents === 'object') {
-                  try {
-                    const s = JSON.stringify(j.contents);
-                    return { res: new Response(s, { headers: { 'Content-Type': 'text/html' } }), name: proxy };
-                  } catch (e) { /* ignore */ }
-                }
-              }
-            } catch (e) {
-              addLogEntry(`Proxy ${proxy} JSON unwrap failed: ${e && e.message}`);
-            }
-            return { res, name: proxy };
-          } else {
-            lastError = new Error(`Proxy ${proxy} responded with status ${res.status}`);
+          
+          // Some proxies require specific headers
+          const headers = {
+            'Origin': window.location.origin,
+            'X-Requested-With': 'XMLHttpRequest'
+          };
+          
+          const res = await fetchWithTimeout(proxyUrl, { headers }, timeout);
+          
+          if (!res.ok) {
+            const error = `HTTP ${res.status}`;
+            errors.push(`${proxy}: ${error}`);
             addLogEntry(`Proxy ${proxy} responded with status ${res.status}`);
+            continue;
           }
+          
+          addLogEntry(`Proxy ${proxy} succeeded`);
+          
+          // Handle JSON-wrapped responses
+          try {
+            const ct = res.headers.get('content-type') || '';
+            if (ct.indexOf('application/json') !== -1) {
+              const j = await res.json();
+              const inner = j && (j.contents || j.contents_html || j.content || j.contents_text);
+              if (typeof inner === 'string' && inner.length > 0) {
+                addLogEntry(`Proxy ${proxy} returned JSON wrapper, unwrapping contents`);
+                return { res: new Response(inner, { headers: { 'Content-Type': 'text/html' } }), name: proxy };
+              }
+            }
+          } catch (e) {
+            // Not JSON or failed to parse, use response as-is
+          }
+          
+          return { res, name: proxy };
         } catch (err) {
-          lastError = err;
-          addLogEntry(`Proxy ${proxy} failed: ${err && err.message}`);
+          if (err.name === 'AbortError') {
+            throw err;
+          }
+          errors.push(`${proxy}: ${err.message}`);
+          addLogEntry(`Proxy ${proxy} failed: ${err.message}`);
         }
       }
+      
+      // Last resort: direct fetch (will likely fail due to CORS)
       try {
+        checkAborted();
         addLogEntry('Attempting direct fetch as last resort');
-        const res = await fetchWithTimeout(url, { signal, mode: 'cors' }, timeout);
+        const res = await fetchWithTimeout(url, { mode: 'cors' }, timeout);
         if (res.ok) {
           addLogEntry('Direct fetch succeeded');
           return { res, name: 'direct' };
-        } else {
-          lastError = new Error(`Direct fetch responded with status ${res.status}`);
-          addLogEntry(`Direct fetch responded with status ${res.status}`);
         }
+        errors.push(`direct: HTTP ${res.status}`);
       } catch (err) {
-        lastError = err;
-        addLogEntry(`Direct fetch failed: ${err && err.message}`);
+        if (err.name === 'AbortError') {
+          throw err;
+        }
+        errors.push(`direct: ${err.message}`);
+        addLogEntry(`Direct fetch failed: ${err.message}`);
       }
+      
       addLogEntry('All proxy + direct fetch attempts failed');
-      throw new Error(`All proxies and direct fetch failed: ${lastError && lastError.message}`);
+      addLogEntry(`Errors: ${errors.join('; ')}`);
+      throw new Error(`Unable to access YouTube. The playlist may be private, or all proxy services are currently unavailable. Please try again in a few minutes.`);
     }
 
     function extractVideoData(html) {
@@ -1188,15 +1217,15 @@
       }
     }
 
-    async function fetchPlaylistPage(url, signal) {
-      const res = await fetchWithTimeout(url, { signal }).catch(err => { throw err; });
+    async function fetchPlaylistPage(url) {
+      const res = await fetchWithTimeout(url, {}, 15000);
       const text = await res.text();
       const { videos } = extractVideoData(text);
-      addLogEntry(`Fetched playlist page: ${videos.length} videos from ${url}`);
+      addLogEntry(`Fetched playlist page: ${videos.length} videos`);
       return { videos };
     }
 
-    async function fetchContinuations(continuations, playlistId, { signal, onProgress }) {
+    async function fetchContinuations(continuations, playlistId, { onProgress }) {
       const maxPages = Math.max(1, Number(els.maxPagesInput.value) || 25);
       const total = Array.isArray(continuations) ? continuations.length : 0;
       let processed = 0;
@@ -1208,7 +1237,7 @@
       }
 
       for (const cont of continuations) {
-        if (signal && signal.aborted) throw new Error('Aborted');
+        checkAborted();
         if (processed >= maxPages) break;
 
         const candidates = [
@@ -1221,15 +1250,16 @@
         let pageVideos = null;
         for (const url of candidates) {
           try {
-            if (signal && signal.aborted) throw new Error('Aborted');
+            checkAborted();
             addLogEntry(`Trying continuation URL: ${url}`);
-            const { videos } = await fetchPlaylistPage(url, signal);
+            const { videos } = await fetchPlaylistPage(url);
             if (videos && videos.length > 0) {
               pageVideos = videos;
               addLogEntry(`Continuation URL succeeded with ${videos.length} videos`);
               break;
             }
           } catch (e) {
+            if (e.name === 'AbortError') throw e;
             addLogEntry(`Continuation candidate failed: ${e && e.message}`);
           }
         }
@@ -1279,7 +1309,7 @@
           addLogEntry('Overall extraction timeout reached (60s)');
         }, 60000);
         try {
-          const r = await fetchWithProxies(url, currentAbortController.signal, 15000);
+          const r = await fetchWithProxies(url, 15000);
           response = r.res;
           proxyName = r.name;
         } finally {
@@ -1317,7 +1347,7 @@
           updateStatus('⏳ Loading more videos...', 'processing');
           els.progress.style.display = 'block';
           try {
-            const moreVideos = await fetchContinuations(continuations, playlistId, { signal: currentAbortController.signal, onProgress: onContinuationProgress });
+            const moreVideos = await fetchContinuations(continuations, playlistId, { onProgress: onContinuationProgress });
             if (moreVideos && moreVideos.length > 0) {
               const startPos = extractedLinks.length + 1;
               moreVideos.forEach((v, idx) => {
