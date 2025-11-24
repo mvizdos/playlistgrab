@@ -1047,13 +1047,11 @@
         try {
           addLogEntry(`Trying proxy ${proxy}...`);
           
-          // Some proxies require specific headers
-          const headers = {
-            'Origin': window.location.origin,
-            'X-Requested-With': 'XMLHttpRequest'
-          };
+          // Avoid setting non-standard or forbidden headers (Origin, X-Requested-With) that trigger CORS preflight failures
+          const init = { mode: 'cors' };
+          if (currentAbortController && currentAbortController.signal) init.signal = currentAbortController.signal;
           
-          const res = await fetchWithTimeout(proxyUrl, { headers }, timeout);
+          const res = await fetchWithTimeout(proxyUrl, init, timeout);
           
           if (!res.ok) {
             const error = `HTTP ${res.status}`;
