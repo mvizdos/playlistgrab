@@ -13,14 +13,9 @@
     let isMobile = false;
 
     // --- CORS PROXIES ---
-    // TODO - DONE 11/24/25: Replace with your own Cloudflare Worker URL for production
-    // Example: 'https://playlistgrab-proxy.your-account.workers.dev/?url='
     const corsProxies = [
       // Add your Cloudflare Worker here as the first option:
-      // 'https://playlistgrab-proxy.mvizdos.workers.dev/?url=',
          'https://proxy.playlistgrab.com/?url=',
-
-
       
       // Fallback to public proxies (unreliable, rate-limited)
       'https://api.codetabs.com/v1/proxy?quest=', // 5 req/sec limit
@@ -32,6 +27,14 @@
 
     // --- UTILITY FUNCTIONS (moved outside DOMContentLoaded) ---
     
+    function getPlaylistType(id) {
+        if (!id) return 'unknown';
+        if (id === 'WL') return 'private'; // Watch Later
+        if (id === 'LL') return 'private'; // Liked Videos
+        if (id.startsWith('RD')) return 'mix';  // YouTube Mix
+    return 'standard';
+    }
+
     function escapeHtml(s) {
       return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
@@ -223,16 +226,39 @@
     }
 
     function validateInput() {
-      const isValid = isValidPlaylistUrl(els.input.value);
+      const url = els.input.value;
+      const id = getPlaylistId(url);
+      const isValid = isValidPlaylistUrl(url);
+      
+      // Default state
       els.extractBtn.disabled = !isValid;
-      if (isValid) {
-        els.errorMsg.classList.add('hidden');
-        updateStatus('✓ Ready to go! Click Extract Links', 'ready');
+      els.errorMsg.classList.add('hidden');
+
+      if (!isValid) {
+        if (url.length > 5) {
+          updateStatus('Invalid URL format', 'default');
+        } else {
+          updateStatus('Paste a YouTube playlist link to get started', 'default');
+        }
+        return;
+      }
+
+      // Intelligent Type Detection
+      const type = getPlaylistType(id);
+      
+      if (type === 'private') {
+        updateStatus('⛔ "Watch Later" and "Liked Videos" are private and cannot be extracted.', 'error');
+        els.extractBtn.disabled = true; // Hard block
+        return;
+      }
+      
+      if (type === 'mix') {
+        updateStatus('⚠️ YouTube Mixes are dynamic and may not extract fully.', 'processing'); // Visual warning only
+        // We allow them to proceed, but manage expectations
       } else {
-        updateStatus('Paste a YouTube playlist link to get started', 'default');
+        updateStatus('✓ Ready to go! Click Extract Links', 'ready');
       }
     }
-
     function isValidPlaylistUrl(url) {
       if (!url) return false;
       try {
