@@ -1048,9 +1048,11 @@
           addLogEntry(`Trying proxy ${proxy}...`);
           
           // Some proxies require specific headers
-          const headers = {
-            'Origin': window.location.origin,
-            'X-Requested-With': 'XMLHttpRequest'
+          // mjv comment out 11/24 test per AI console recommendation in Chrome console lol
+          // const headers = {
+          //  'Origin': window.location.origin,
+          //
+          //   'X-Requested-With': 'XMLHttpRequest'
           };
           
           const res = await fetchWithTimeout(proxyUrl, { headers }, timeout);
