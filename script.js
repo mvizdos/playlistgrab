@@ -1,4 +1,3 @@
-  <script>
     // Application version (follow CHANGELOG.md / tags)
     const APP_VERSION = '0.1.0';
 
@@ -860,4 +859,4 @@
         } catch (e) { /* ignore */ }
       };
     }
-  </script>
+ 
