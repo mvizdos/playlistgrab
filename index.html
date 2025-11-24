@@ -1052,43 +1052,39 @@
           // const headers = {
           //  'Origin': window.location.origin,
           //
-          //   'X-Requested-With': 'XMLHttpRequest'
-          };
+  //   'X-Requested-With': 'XMLHttpRequest'
           
-          const res = await fetchWithTimeout(proxyUrl, { headers }, timeout);
+  // Proxy-specific headers can be added here if needed.
+  // Example:
+  // const headers = {
+  //   'Origin': window.location.origin,
+  //   'X-Requested-With': 'XMLHttpRequest'
+  // };
           
-          if (!res.ok) {
-            const error = `HTTP ${res.status}`;
-            errors.push(`${proxy}: ${error}`);
-            addLogEntry(`Proxy ${proxy} responded with status ${res.status}`);
-            continue;
-          }
+  const res = await fetchWithTimeout(proxyUrl, { headers }, timeout);
           
-          addLogEntry(`Proxy ${proxy} succeeded`);
+  if (!res.ok) {
+    continue;
+  }
           
-          // Handle JSON-wrapped responses
-          try {
-            const ct = res.headers.get('content-type') || '';
-            if (ct.indexOf('application/json') !== -1) {
-              const j = await res.json();
-              const inner = j && (j.contents || j.contents_html || j.content || j.contents_text);
-              if (typeof inner === 'string' && inner.length > 0) {
-                addLogEntry(`Proxy ${proxy} returned JSON wrapper, unwrapping contents`);
-                return { res: new Response(inner, { headers: { 'Content-Type': 'text/html' } }), name: proxy };
-              }
-            }
-          } catch (e) {
-            // Not JSON or failed to parse, use response as-is
-          }
+  addLogEntry(`Proxy ${proxy} succeeded`);
           
-          return { res, name: proxy };
-        } catch (err) {
-          if (err.name === 'AbortError') {
-            throw err;
-          }
-          errors.push(`${proxy}: ${err.message}`);
-          addLogEntry(`Proxy ${proxy} failed: ${err.message}`);
-        }
+  // Handle JSON-wrapped responses
+  try {
+    const ct = res.headers.get('content-type') || '';
+    if (ct.indexOf('application/json') !== -1) {
+      const j = await res.json();
+      const inner = j && (j.contents || j.contents_html || j.content || j.contents_text);
+      if (typeof inner === 'string' && inner.length > 0) {
+        addLogEntry(`Proxy ${proxy} returned JSON wrapper, unwrapping contents`);
+        return { res: new Response(inner, { headers: { 'Content-Type': 'text/html' } }), name: proxy };
+      }
+    }
+  } catch (e) {
+    // Not JSON or failed to parse, use response as-is
+  }
+          
+  return { res, name: proxy };
       }
       
       // Last resort: direct fetch (will likely fail due to CORS)
